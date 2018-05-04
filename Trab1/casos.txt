@@ -1,0 +1,9 @@
+#A primeira letra de uma gramática tem que ser Maiúscula.
+#Após uma letra maiúscula, tem que vir um '-' ou um '|' dependendo do lado da produção no qual essa letra se enconta.
+#Após um '-' tem que vir um ">" e antes uma letra maiúscula.
+#Após um ">" tem que vir uma letra minúscula ou um &
+#Após uma letra minúscula, pode vir um "|" ou uma letra maiúscula, ou um "\n", ou posso terminar a produção
+#Após um "|" pode vir uma letra minúscula apenas.
+#Se a ultima letra maiúscula inserida se encontra na direita de uma letra minúscula e não tem nada na frente posso terminar.
+#Após um "\n" pode vir uma letra maiúscula ou eu posso terminar a produção
+#Se tiver um epsilon a primeira letra da string nao pode ta em lugar nenhum, e o epsilon só pode ta sozinho, e ele tem que ta sempre antes de um "\n"
