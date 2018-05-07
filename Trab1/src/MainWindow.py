@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import os
-import psutil
+import gc
 from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAction, qApp)
-from Forms import GrammarForm
+from Forms import GrammarForm, ExpressionForm
 from Views import GrammarView
 from Editors import GrammarEditor
 
@@ -16,6 +15,7 @@ class MainWindow(QMainWindow):
 
     def initGUI(self):
         self.grammars = []
+        self.expressions = []
         self.statusBar()
         menubar = self.menuBar()
         new_menu = menubar.addMenu("&New")
@@ -30,9 +30,14 @@ class MainWindow(QMainWindow):
         self.show()
 
 
+
     def create_grammar(self):
         grammar_form = GrammarForm(self.grammars)
         self.setCentralWidget(grammar_form)
+
+    def create_expression(self):
+        expression_form = ExpressionForm(self.expressions)
+        self.setCentralWidget(expression_form)
 
     def view_grammars(self):
         grammar_view = GrammarView(self.grammars)
@@ -49,12 +54,12 @@ class MainWindow(QMainWindow):
         new_regularG.triggered.connect(self.create_grammar)
         new_regularE = QAction("&Regular Expression", self)
         new_regularE.setStatusTip("New regular expression")
+        new_regularE.triggered.connect(self.create_expression)
 
         exitAct = QAction('&Exit', self)
         exitAct.setShortcut('Ctrl+Q')
         exitAct.setStatusTip('Exit application')
         exitAct.triggered.connect(qApp.quit)
-
 
         new_menu.addAction(new_regularG)
         new_menu.addAction(new_regularE)
@@ -76,9 +81,6 @@ class MainWindow(QMainWindow):
         edit_menu.addAction(edit_regularG)
 
 if __name__ == "__main__":
-
-    process = psutil.Process(os.getpid())
-    print(process)
     app = QApplication(sys.argv)
     GUI = MainWindow()
     sys.exit(app.exec_())

@@ -1,82 +1,31 @@
 # -*- coding: utf-8 -*-
 
 from Models import RegularGrammar
-
+import re
 #Classe que vai conter as operações realizadas nas gramáticas e nas expressões
 #E futuramente nos Autômatos
-class Operations:
+class GrammarOperations:
 
     def __init__(self, grammars):
         self.grammars = grammars
 
-    def parse_grammar(self, grammar, name, result):
+    def parse_grammar(self, grammar, name, result, update=False):
         error = False
         finishable = False
         result.clear()
         text = grammar.replace(" ", "")
-        for i in range(len(text)):
-            try :
-                if i == 0:
-                    if not(text[i].isupper()) or text[i+1] != "-":
-                        error = True
-                        break
-                elif text[i] == "-":
-                    finishable = False
-                    if text[i+1] != ">":
-                        error = True
-                        break
-                elif text[i] == ">":
-                    finishable = False
-                    if text[i+1] != "&" and not(text[i+1].islower()) and not(text[i+1].isdigit()):
-                        error = True
-                        break
-                elif text[i] == "\n":
-                    finishable = True
-                    if not(text[i+1].isupper()):
-                        finishable = False
-                        error = True
-                        break
-                elif text[i] == "|":
-                    finishable = False
-                    if not(text[i+1].islower()) and not(text[i+1].isdigit()) and text[i+1] != "&":
-                        error = True
-                        break
-                elif text[i].islower() or text[i].isdigit():
-                    finishable = True
-                    if text[i+1] != "|" and not(text[i+1].isupper()) and text[i+1] != "\n":
-                        finishable = False
-                        error = True
-                        break
-                elif text[i].isupper():
-                    finishable = True
-                    if text[i-1] == "\n":
-                        finishable = False
-                        if text[i+1] != "-":
-                            error = True
-                            break
-                    elif text[i+1] != "\n" and text[i+1] != "|":
-                        finishable = False
-                        error = True
-                        break
-                elif text[i] == "&":
-                    finishable = True
-                    if text[i+1] != "|" and text[i+1] != "\n":
-                        finishable = False
-                        error = True
-                        break
-            except IndexError:
-                if finishable :
-                    return self.validate_grammar(text,name,result)
-                else:
-                    result.textCursor().insertText('fail')
-                    return False
-
-        if finishable :
-            return self.validate_grammar(text,name,result)
-        elif error :
-            result.textCursor().insertText('fail')
+        regex = re.compile(r'([A-Z]->[0-9a-z]([A-Z]?)(\|([0-9a-z]([A-Z]?)))*(\s)*)*')
+        match = regex.match(text)
+        
+        if any(x.name == name for x in self.grammars) and not update:
+            result.textCursor().insertText("There is already a grammar with that name")            
             return False
 
+        if (match.group() == text):
+            return self.validate_grammar(text,name,result)
+        else :
+            result.textCursor().insertText('fail')
+            return False
     def validate_grammar(self, text, name, result):
         if "&" in text:
             first_enter = text.find('\n')
@@ -103,9 +52,23 @@ class Operations:
         new_grammar_productions = editor.grammar_update.toPlainText()
         result = editor.result
         new_name = editor.grammar_name.text()
-        att = self.parse_grammar(new_grammar_productions, new_name, result)
-
+        if new_name != old_grammar_name:
+            update = False
+        else :
+            update = True
+        
+        att = self.parse_grammar(new_grammar_productions, new_name, result, update)
+        
         if att:
             old_grammar = next(x for x in editor.grammars if x.name == old_grammar_name)
             editor.grammars.remove(old_grammar)
-        editor.update_combobox(new_name)
+            editor.update_combobox(new_name)
+
+class ExpressionOperations:
+    def __init__(self, expressions):
+        self.expressions = expressions
+
+    def parse_expression(self, expression, name, result, update=False):
+        error = True
+        finishable = False
+        result.clear()

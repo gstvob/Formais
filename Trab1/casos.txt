@@ -1,3 +1,7 @@
+
+CASOS GRAMATICAS REGULARES.
+
+#AONDE VAI LETRA MINUSCULA VAI DIGITO
 #A primeira letra de uma gramática tem que ser Maiúscula.
 #Após uma letra maiúscula, tem que vir um '-' ou um '|' dependendo do lado da produção no qual essa letra se enconta.
 #Após um '-' tem que vir um ">" e antes uma letra maiúscula.
@@ -7,3 +11,81 @@
 #Se a ultima letra maiúscula inserida se encontra na direita de uma letra minúscula e não tem nada na frente posso terminar.
 #Após um "\n" pode vir uma letra maiúscula ou eu posso terminar a produção
 #Se tiver um epsilon a primeira letra da string nao pode ta em lugar nenhum, e o epsilon só pode ta sozinho, e ele tem que ta sempre antes de um "\n"
+
+
+
+
+CASOS DE EXPRESSÕES REGULARES.
+
+
+#pode começar com um abre parentẽsis, uma letra minúscula/digito
+#depois de um abre parentesis pode vir outro abre parentesis , pode vir uma letra minúscula/digito
+#depois de uma letra minúscula/digito podevir outra, ou fecha parentesis ou um operador
+#depois de um fecha parentesis pode vir um operador ou mais letras
+#depois de um operador vem um abre parentesis ou letra minúscula/digito
+#o número de abre parentesis deve ser igual ao de fecha.
+
+
+
+# for i in range(len(text)):
+        #     try :
+        #         if i == 0:
+        #             if not(text[i].isupper()) or text[i+1] != "-":
+        #                 error = True
+        #                 break
+        #         elif text[i] == "-":
+        #             finishable = False
+        #             if text[i+1] != ">":
+        #                 error = True
+        #                 break
+        #         elif text[i] == ">":
+        #             finishable = False
+        #             if text[i+1] != "&" and not(text[i+1].islower()) and not(text[i+1].isdigit()):
+        #                 error = True
+        #                 break
+        #         elif text[i] == "\n":
+        #             finishable = True
+        #             if not(text[i+1].isupper()):
+        #                 finishable = False
+        #                 error = True
+        #                 break
+        #         elif text[i] == "|":
+        #             finishable = False
+        #             if not(text[i+1].islower()) and not(text[i+1].isdigit()) and text[i+1] != "&":
+        #                 error = True
+        #                 break
+        #         elif text[i].islower() or text[i].isdigit():
+        #             finishable = True
+        #             if text[i+1] != "|" and not(text[i+1].isupper()) and text[i+1] != "\n":
+        #                 finishable = False
+        #                 error = True
+        #                 break
+        #         elif text[i].isupper():
+        #             finishable = True
+        #             if text[i-1] == "\n":
+        #                 finishable = False
+        #                 if text[i+1] != "-":
+        #                     error = True
+        #                     break
+        #             elif text[i+1] != "\n" and text[i+1] != "|":
+        #                 finishable = False
+        #                 error = True
+        #                 break
+        #         elif text[i] == "&":
+        #             finishable = True
+        #             if text[i+1] != "|" and text[i+1] != "\n":
+        #                 finishable = False
+        #                 error = True
+        #                 break
+        #     except IndexError:
+        #         if finishable :
+        #             return self.validate_grammar(text,name,result)
+        #         else:
+        #             result.textCursor().insertText('fail')
+        #             return False
+
+        # if finishable :
+        #     return self.validate_grammar(text,name,result)
+        # elif error :
+        #     result.textCursor().insertText('fail')
+        #     return False

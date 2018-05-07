@@ -17,3 +17,8 @@ class RegularGrammar:
                 self.vn.append(i)
             elif (i.islower() or i.isdigit()) and i not in self.vt:
                 self.vt.append(i)
+
+class RegularExpression:
+    def __init__(self, name, expression):
+        self.name = name
+        self.expression = expression

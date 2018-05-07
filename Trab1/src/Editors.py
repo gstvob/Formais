@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QComboBox, QPushButton, QTextEdit, QGridLayout, QLineEdit
-from Operations import Operations
+from Operations import GrammarOperations
 from Models import RegularGrammar
 
 class GrammarEditor(QWidget):
@@ -34,7 +34,8 @@ class GrammarEditor(QWidget):
 		self.show()
 
 	def updateGrammar(self, grammar_nameOld):
-		ops = Operations(self.grammars)
+		
+		ops = GrammarOperations(self.grammars)
 
 		self.grammar_name.setReadOnly(False)
 		self.grammar_update.setReadOnly(False)
@@ -56,4 +57,3 @@ class GrammarEditor(QWidget):
 		self.choose_grammar.removeItem(index)
 		self.choose_grammar.insertItem(index, self.grammar_name.text())
 		self.choose_grammar.setCurrentIndex(index)
-		self.updateGrammar(self.choose_grammar.currentText())

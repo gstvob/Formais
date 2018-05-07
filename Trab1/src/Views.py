@@ -7,7 +7,6 @@ class GrammarView(QWidget):
 		self.grammarList = grammarList
 		self.initUI()
 
-	#TODO alterar a forma de view
 	def initUI(self):
 
 		self.grid = QGridLayout()
