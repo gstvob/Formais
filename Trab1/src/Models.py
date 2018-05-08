@@ -5,9 +5,9 @@ class RegularGrammar:
     def __init__(self, name, P):
         self.name = name
         self.p = P
-        self.Definition(P)
+        self._definition(P)
 
-    def Definition(self, productions):
+    def _definition(self, productions):
         self.s = productions[0]
         self.vn = []
         self.vt = []
@@ -19,6 +19,13 @@ class RegularGrammar:
                 self.vt.append(i)
 
 class RegularExpression:
+
     def __init__(self, name, expression):
         self.name = name
         self.expression = expression
+
+    def set_name(self, name):
+        self.name = name
+
+    def set_expression(self, exp):
+        self.expression = exp

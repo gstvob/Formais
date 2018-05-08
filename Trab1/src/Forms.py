@@ -17,7 +17,7 @@ class GrammarForm(QWidget):
         save_grammar = QPushButton("Save Grammar")
         result = QTextEdit()
         result.setReadOnly(True)
-
+        result.setPlaceholderText("The results will be shown here.")
         result.setMaximumHeight(200)
         grammar_edit.setMaximumHeight(300)
         grammar_name.setPlaceholderText("Name your grammar")
@@ -37,20 +37,20 @@ class GrammarForm(QWidget):
 
 
 class ExpressionForm(QWidget):
-    
-    def __init__(self, expressions):
-        super().__init__()
-        self.initUI(expressions)
 
-    def initUI(self, expressionions):
-        
+    def __init__(self, expressions, update=False):
+        super().__init__()
+        self.initUI(expressions, update)
+
+    def initUI(self, expressions, update):
+
         ops = ExpressionOperations(expressions)
         expression_name = QLineEdit()
         expression_edit = QLineEdit()
         save_expression = QPushButton("Save Expression")
         result = QTextEdit()
         result.setReadOnly(True)
-
+        result.setPlaceholderText("The results will be shown here.")
         result.setMaximumHeight(200)
         expression_name.setPlaceholderText("Name your expression")
         expression_edit.setPlaceholderText("Valid expression")
@@ -62,13 +62,6 @@ class ExpressionForm(QWidget):
         grid.addWidget(result,3, 0)
         grid.addWidget(save_expression,4, 0)
 
-        save_expression.clicked.connect(lambda: ops.parse_expression(expression_edit.text(), expression_name.text(), result))
-
+        save_expression.clicked.connect(lambda: ops.parse_expression(expression_edit.text(), expression_name.text(), result, update))
         self.setLayout(grid)
         self.show()
-
-
-
-
-
-
