@@ -55,7 +55,7 @@ class GrammarOperations:
         new_grammar_productions = editor.grammar_update.toPlainText()
         result = editor.result
         new_name = editor.grammar_name.text()
-        if new_name != old_grammar_name:
+        if new_name != old_grammar_name and new_name != "":
             update = False
         else :
             update = True
@@ -71,7 +71,7 @@ class ExpressionOperations:
     def __init__(self, expressions):
         self.expressions = expressions
 
-    def parse_expression(self, expression, name, result, update):
+    def parse_expression(self, expression, name, result, update=False):
         result.clear()
         text = expression.replace(" ", "")
         regex = re.compile(r'[(]?[a-z0-9]+([?+*]?([)][?+*]?)?)([|]?[(]?[a-z0-9]+([?+*]?([)][?+*]?[)]?)?))*')
@@ -89,25 +89,31 @@ class ExpressionOperations:
             return False
         try :
             if (match.group() == text):
-                if not update :
-                    new_expr = RegularExpression(name, text)
-                    self.expressions.append(new_expr)
-                    result.textCursor().insertText(text)
-                    return True
-                else:
-                    ##descobrir como pegar o regex atual/antigo antes do update
-                    if name != regex.name and (any(x.name == name for x in self.expressions) or name==""):
-                        result.textCursor().insertText("Error in the name of the expression")
-                        return False
-                    else:
-                        regex.set_name(name)
-                        regex.set_expression(expression)
-                        result.textCursor().insertText(text)
-                        return True
-            else :
-                result.textCursor().insertText('There is something wrong with your expression')
+                new_expr = RegularExpression(name, text)
+                self.expressions.append(new_expr)
+                result.textCursor().insertText(text)
+                return True
+            else:
+                result.textCursor().insertText("There is something wrong with your expression")
                 return False
+
         except AttributeError:
-            print("que")
             result.textCursor().insertText("There is something wrong with your expression")
             return False
+
+    def updateExpression(self, editor):
+        oldname = editor.choose_expression.currentText()
+        new_name = editor.expression_name.text()
+        if new_name != oldname and new_name != "":
+            update = False
+        else:
+            update = True
+        regex = editor.expression_new.text()
+        att = self.parse_expression(regex, new_name, editor.result, update)
+        if att :
+            for i in self.expressions:
+                if i.name == oldname:
+                    self.expressions.remove(i)
+                    editor.update_combobox()
+                    return True
+

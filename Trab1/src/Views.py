@@ -29,6 +29,7 @@ class View(QWidget):
 		except AttributeError:
 			self.view.textCursor().insertText(object.expression)
 
+#herda da view BURRO
 class GrammarView():
 
 	def __init__(self, grammarList):

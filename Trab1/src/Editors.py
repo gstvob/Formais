@@ -69,37 +69,56 @@ class ExpressionEditor(QWidget):
 	def initUI(self):
 		self.grid = QGridLayout()
 		self.choose_expression = QComboBox(self)
+
 		for i in self.expressions:
 			self.choose_expression.addItem(i.name)
 
-		form_e = ExpressionForm(self.expressions, True)
+		self.expression_name = QLineEdit()
+		self.expression_new = QLineEdit()
+		self.update_expression = QPushButton("Update Expression")
+		self.result = QTextEdit()
 
-		self.lineEdits = form_e.findChildren(QLineEdit)
-		self.result = form_e.findChildren(QTextEdit)[0]
-		self.save_button = form_e.findChildren(QPushButton)[0]
+		self.expression_name.setPlaceholderText("Update name of expression")
+		self.expression_new.setPlaceholderText("Update expression")
+		self.expression_new.setReadOnly(True)
+		self.expression_name.setReadOnly(True)
+		self.result.setReadOnly(True)
 
-		for i in self.lineEdits:
-			i.setReadOnly(True)
-
-		self.grid.addWidget(self.choose_expression, 0,0)
-		self.grid.addWidget(form_e,1,0)
+		self.grid.addWidget(self.choose_expression, 0, 0)
+		self.grid.addWidget(self.expression_name, 1, 0)
+		self.grid.addWidget(self.expression_new, 2, 0)
+		self.grid.addWidget(self.result, 3, 0)
+		self.grid.addWidget(self.update_expression, 4, 0)
 		self.choose_expression.activated[str].connect(self.updateExpression)
 		self.setLayout(self.grid)
 		self.show()
 
 	def updateExpression(self, oldname):
-		for i in self.lineEdits:
-			i.setReadOnly(False)
-		self.lineEdits[0].clear()
-		self.lineEdits[1].clear()
+		ops = ExpressionOperations(self.expressions)
 
-		self.lineEdits[0].setText(oldname)
-		self.lineEdits[1].setText(regex.expression)
-		self.result.textCursor().insertText(regex.expression)
-		self.save_button.clicked.connect(self.update_combobox)
+		self.expression_name.setReadOnly(False)
+		self.expression_new.setReadOnly(False)
+
+		self.expression_new.clear()
+		self.result.clear()
+		self.expression_name.clear()
+
+		expression = next(x for x in self.expressions if x.name == oldname)
+
+		self.expression_name.insert(expression.name)
+		self.expression_new.insert(expression.expression)
+		self.result.textCursor().insertText(expression.expression)
+		self.update_expression.clicked.connect(lambda : ops.updateExpression(self))
 
 	def update_combobox(self):
 		index = self.choose_expression.findText(self.choose_expression.currentText())
 		self.choose_expression.removeItem(index)
-		self.choose_expression.insertItem(index, self.lineEdits[0].text())
+		self.choose_expression.insertItem(index, self.expression_name.text())
 		self.choose_expression.setCurrentIndex(index)
+
+
+
+
+
+
+

@@ -38,11 +38,11 @@ class GrammarForm(QWidget):
 
 class ExpressionForm(QWidget):
 
-    def __init__(self, expressions, update=False):
+    def __init__(self, expressions):
         super().__init__()
-        self.initUI(expressions, update)
+        self.initUI(expressions)
 
-    def initUI(self, expressions, update):
+    def initUI(self, expressions):
 
         ops = ExpressionOperations(expressions)
         expression_name = QLineEdit()
@@ -62,6 +62,6 @@ class ExpressionForm(QWidget):
         grid.addWidget(result,3, 0)
         grid.addWidget(save_expression,4, 0)
 
-        save_expression.clicked.connect(lambda: ops.parse_expression(expression_edit.text(), expression_name.text(), result, update))
+        save_expression.clicked.connect(lambda: ops.parse_expression(expression_edit.text(), expression_name.text(), result))
         self.setLayout(grid)
         self.show()
