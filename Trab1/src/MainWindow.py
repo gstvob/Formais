@@ -17,14 +17,17 @@ class MainWindow(QMainWindow):
         self.grammars = []
         self.expressions = []
         self.statusBar()
+
         menubar = self.menuBar()
         new_menu = menubar.addMenu("&New")
         list_menu = menubar.addMenu("&List")
         edit_menu = menubar.addMenu("&Edit")
+        conversion_menu = menubar.addMenu("&Convert")
 
         self.set_newMenu(new_menu)
         self.set_listMenu(list_menu)
         self.set_editMenu(edit_menu)
+        self.set_conversion_menu(conversion_menu)
         self.setGeometry(300, 300, 560, 320)
         self.setWindowTitle('Aplicação para manipulação de ER, AF, E GR')
         self.show()
@@ -39,13 +42,11 @@ class MainWindow(QMainWindow):
 
     def _view_grammars(self):
         grammar_view = GrammarView(self.grammars)
-        view = grammar_view.initUI()
-        self.setCentralWidget(view)
+        self.setCentralWidget(grammar_view)
 
     def _view_expressions(self):
         expression_view = ExpressionView(self.expressions)
-        view = expression_view.initUI()
-        self.setCentralWidget(view)
+        self.setCentralWidget(expression_view)
 
     def _edit_grammars(self):
         grammar_edit = GrammarEditor(self.grammars)
@@ -96,6 +97,13 @@ class MainWindow(QMainWindow):
 
         edit_menu.addAction(edit_regularG)
         edit_menu.addAction(edit_regularE)
+
+    def set_conversion_menu(self, conversion_menu):
+        grammar_automaton = QAction("&Convert grammar to automaton", self)
+        grammar_automaton.setStatusTip("Convert a regular grammar to automaton")
+        grammar_automaton.triggered.connect(self._convert_grammar_automaton)
+
+        conversion_menu.addAction(grammar_automaton)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

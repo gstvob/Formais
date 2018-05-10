@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QComboBox, QPushButton, QTextEdit, QGridLayout, QLineEdit
 from Operations import GrammarOperations, ExpressionOperations
-from Models import RegularGrammar
 from Forms import GrammarForm, ExpressionForm
+
 class GrammarEditor(QWidget):
 
 	def __init__(self, grammars):
@@ -52,7 +52,7 @@ class GrammarEditor(QWidget):
 		self.update_grammar.clicked.connect(lambda : ops.updateGrammar(self))
 
 
-	def update_combobox(self, updated_name):
+	def update_combobox(self):
 		index = self.choose_grammar.findText(self.choose_grammar.currentText())
 		self.choose_grammar.removeItem(index)
 		self.choose_grammar.insertItem(index, self.grammar_name.text())
@@ -115,10 +115,3 @@ class ExpressionEditor(QWidget):
 		self.choose_expression.removeItem(index)
 		self.choose_expression.insertItem(index, self.expression_name.text())
 		self.choose_expression.setCurrentIndex(index)
-
-
-
-
-
-
-
