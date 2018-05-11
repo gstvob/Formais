@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QComboBox, QPushButton, QTextEdit, QGridLayout, QLineEdit, QTableWidget, QTableWidgetItem
+from PyQt5.QtWidgets import QWidget, QComboBox, QPushButton, QTextEdit, QGridLayout, QLineEdit, QTableWidget, QTableWidgetItem, QInputDialog
 from Operations import GrammarOperations, ExpressionOperations
 from Forms import GrammarForm, ExpressionForm
 from Models import Automaton
@@ -138,7 +138,6 @@ class ConversionEditor(QWidget):
 		self.grid.addWidget(self.choose_grammar, 0,0)
 		self.setLayout(self.grid)
 		self.choose_grammar.activated[str].connect(lambda d: self.show_grammar(self.choose_grammar.currentText()))
-		# self.choose_grammar.activated[str].connect(lambda d: op.convert_to_automaton(self.choose_grammar.currentText()), automata)
 		self.show()
 
 	def show_grammar(self, grammar_name):
@@ -154,6 +153,10 @@ class ConversionEditor(QWidget):
 		self.grid.addWidget(convert, 2, 0)
 		convert.clicked.connect(lambda d: ops.convert_to_automaton(grammar, self))
 
+	#colocar a opção de determinizar ou minimizar o automato
+	#quando determinizar o automato eu substituo a table pela determinizada
+	#depois de determinizar o autômato eu mostro o minimizar, se clicar
+	#quando minimizar o automato ele substitui.
 	def build_table(self, states, alphabet):
 		for state in states:
 			for i in state.transitions:
@@ -184,8 +187,10 @@ class ConversionEditor(QWidget):
 		self.grid.addWidget(table_representation, 1, 1)
 		self.grid.addWidget(save_automaton, 2,1)
 	def save_automata(self, states, alphabet):
-		automaton = Automaton(self.choose_grammar.currentText(), states, alphabet)
-		self.automata.append(automaton)
-		print(automaton.non_deterministic)
-		
+		name, ok = QInputDialog().getText(self,"Input Dialog", "Enter a name for this automaton")
+		if ok:
+			automaton = Automaton(str(name), states, alphabet)
+			self.automata.append(automaton)
+			print(automaton.non_deterministic)
+
 	# def automaton_grammar(self, automata):

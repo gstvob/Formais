@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout
+from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout, QTableWidget, QTableWidgetItem
 
 
 class View(QWidget):
@@ -38,3 +38,30 @@ class ExpressionView(View):
 
 	def __init__(self, expressionList):
 		super().__init__(expressionList)
+
+class AutomatonView(View):
+
+	def __init__(self, automata):
+		super().__init__(automata)
+
+	def _view(self, name):
+		automaton = next(x for x in self.list if x.name == name)
+		table_representation = QTableWidget()
+		table_representation.setColumnCount(len(automaton.alphabet))
+		table_representation.setRowCount(len(automaton.states))
+		states_labels = [x.label for x in automaton.states]
+		table_representation.setVerticalHeaderLabels(states_labels)
+		table_representation.setHorizontalHeaderLabels(automaton.alphabet)
+		i = 0
+		for state in automaton.states:
+			header = table_representation.verticalHeaderItem(i)
+			for j in range(len(automaton.alphabet)):
+				symbol = table_representation.horizontalHeaderItem(j)
+				transition = [x.target for x in state.transitions if x.symbol == symbol.text()]
+				target_states = ""
+				for tst in transition:
+					target_states+=tst.label+" "
+				newItem = QTableWidgetItem(target_states)
+				table_representation.setItem(i, j, newItem)
+			i+=1
+		self.grid.addWidget(table_representation, 1, 0)

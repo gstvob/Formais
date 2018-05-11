@@ -4,7 +4,7 @@ import sys
 import gc
 from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAction, qApp)
 from Forms import GrammarForm, ExpressionForm
-from Views import GrammarView, ExpressionView
+from Views import GrammarView, ExpressionView, AutomatonView
 from Editors import GrammarEditor, ExpressionEditor, ConversionEditor
 
 class MainWindow(QMainWindow):
@@ -49,6 +49,10 @@ class MainWindow(QMainWindow):
         expression_view = ExpressionView(self.expressions)
         self.setCentralWidget(expression_view)
 
+    def _view_automata(self):
+        automata_view = AutomatonView(self.automata)
+        self.setCentralWidget(automata_view)
+
     def _edit_grammars(self):
         grammar_edit = GrammarEditor(self.grammars)
         self.setCentralWidget(grammar_edit)
@@ -87,10 +91,15 @@ class MainWindow(QMainWindow):
         list_regularE = QAction("&List regular expressions", self)
         list_regularE.setStatusTip("View all saved regular expressions")
         list_regularE.triggered.connect(self._view_expressions)
+
+        list_automata = QAction("&List Automata", self)
+        list_automata.setStatusTip("View all saved automata")
+        list_automata.triggered.connect(self._view_automata)
         #operações para listar expressões regulares.
         list_menu.addAction(list_regularG)
         list_menu.addAction(list_regularE)
-
+        list_menu.addAction(list_automata)
+        
     def set_editMenu(self, edit_menu):
         edit_regularG = QAction("&Edit regular grammar", self)
         edit_regularG.setStatusTip("Edit a regular grammar")
