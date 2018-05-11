@@ -5,7 +5,7 @@ import gc
 from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAction, qApp)
 from Forms import GrammarForm, ExpressionForm
 from Views import GrammarView, ExpressionView
-from Editors import GrammarEditor, ExpressionEditor
+from Editors import GrammarEditor, ExpressionEditor, ConversionEditor
 
 class MainWindow(QMainWindow):
 
@@ -16,6 +16,7 @@ class MainWindow(QMainWindow):
     def initGUI(self):
         self.grammars = []
         self.expressions = []
+        self.automata = []
         self.statusBar()
 
         menubar = self.menuBar()
@@ -55,6 +56,10 @@ class MainWindow(QMainWindow):
     def _edit_expressions(self):
         expression_edit = ExpressionEditor(self.expressions)
         self.setCentralWidget(expression_edit)
+
+    def _convert_grammar_automaton(self):
+        conversion = ConversionEditor(1, self.grammars, self.automata)
+        self.setCentralWidget(conversion)
 
     def set_newMenu(self, new_menu):
 

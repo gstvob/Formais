@@ -19,7 +19,7 @@ class GrammarOperations:
     def parse_grammar(self, grammar, name, result, update=False, change_name=True):
         result.clear()
         text = grammar.replace(" ", "")
-        regex = re.compile(r'([A-Z][0-9]?->([a-z0-9][A-Z]?|\&)([|][a-z][A-Z]?)*(\n|\Z))*')
+        regex = re.compile(r'([A-Z][0-9]?->([a-z0-9][A-Z]?|\&)([|][a-z0-9][A-Z]?)*(\n|\Z))*')
         match = regex.match(text)
 
         if (any(x.name == name for x in self.grammars) or name == "") and change_name:
@@ -76,15 +76,41 @@ class GrammarOperations:
             old_grammar.set_productions(editor.result.toPlainText())
             editor.update_combobox()
 
-    def covert_to_automaton(self, grammar):
-        states = [for x in grammar.vn: State(x)]
+    #Achar uma forma de colocar - para as transições não definidas.
+    def convert_to_automaton(self, grammar, editor):
+        states = [State(x) for x in grammar.vn]
         alphabet = grammar.vt
-        q0 = states[0]
         extra = State("$", True)
         states.append(extra)
-        f = all(for x in states if x.acceptance == True)
-        print(states)
-        print(alphabet)
+        #Colocando transições "-"  no estado novo
+        for i in alphabet:
+            extra.add_transition(Transition(State("-"), i))
+        ##products agora tem as produções em um array separadas como.
+        #["S->a|bB","B->aB|a"]
+        productions = grammar.p.split("\n")
+        if "&" in productions[0]:
+            states[0].set_acceptance(True)
+        walk = 0
+        while(walk < len(productions)):
+            p = productions[walk]
+            state = next(x for x in states if x.label == p[0])
+            rules = p.split(p[0]+"->")
+            rules = rules[1].split("|")
+            trsts = []
+            for i in rules :
+                if len(i) > 1:
+                    target = next(x for x in states if x.label == i[1])
+                    trsts.append(Transition(target, i[0]))
+                else:
+                    target = next(x for x in states if x.label == "$")
+                    trsts.append(Transition(target, i[0]))
+            for i in alphabet:
+                if not any(i in str for str in rules):
+                    target = State("-")
+                    trsts.append(Transition(target, i))
+            state.insert_transitions(trsts)
+            walk+=1
+        editor.build_table(states, alphabet)
 
 class ExpressionOperations:
     def __init__(self, expressions):

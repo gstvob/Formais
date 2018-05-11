@@ -38,14 +38,27 @@ class RegularExpression:
 
 class Automaton:
 
-    def __init__(self, name, k, states, transitions, alphabet, f):
+    def __init__(self, name, states,alphabet):
         self.name = name
-        self.k = k
         self.states = states
-        self.transitions = transitions
         self.alphabet = alphabet
         self.q0 = states[0]
-        self.f = f
+        self._set_finals()
+        self.dfa_or_ndfa()
+
+    def _set_finals(self):
+        self.f = [x for x in self.states if x.acceptance == True]
+
+    def dfa_or_ndfa(self):
+        self.non_deterministic = False
+        for state in self.states:
+            for trst in state.transitions:
+                if any(x for x in state.transitions if trst.target != x.target and
+                                                    x.symbol == trst.symbol and
+                                                    trst != x):
+                    self.non_deterministic = True
+
+
 
 class State:
     #se em um estado eu tenho duas transições com o mesmo simbolo para estados
@@ -56,9 +69,13 @@ class State:
         self.label = label
         self.transitions = []
 
-    def insert_transition(self, transition):
-        self.transitions.append(transition)
+    def set_acceptance(self, status):
+        self.acceptance = status
 
+    def insert_transitions(self, transitions):
+        self.transitions=transitions
+    def add_transition(self, transition):
+        self.transitions.append(transition)
 class Transition:
     def __init__(self, target, symbol):
         self.symbol = symbol

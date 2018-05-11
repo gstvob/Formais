@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QPushButton,QWidget, QTextEdit, QLineEdit, QLabel, QGridLayout
+from PyQt5.QtWidgets import QPushButton,QWidget, QTextEdit,QLineEdit, QLabel, QGridLayout
 from Operations import GrammarOperations, ExpressionOperations
 
 class GrammarForm(QWidget):
@@ -30,7 +30,10 @@ class GrammarForm(QWidget):
         grid.addWidget(result,5, 0)
         grid.addWidget(save_grammar,6, 0)
 
-        save_grammar.clicked.connect(lambda: ops.parse_grammar(grammar_edit.toPlainText(), grammar_name.text(), result))
+        save_grammar.clicked.connect(lambda: ops.parse_grammar(
+                                            grammar_edit.toPlainText(),
+                                            grammar_name.text(),
+                                            result))
 
         self.setLayout(grid)
         self.show()
@@ -62,6 +65,9 @@ class ExpressionForm(QWidget):
         grid.addWidget(result,3, 0)
         grid.addWidget(save_expression,4, 0)
 
-        save_expression.clicked.connect(lambda: ops.parse_expression(expression_edit.text(), expression_name.text(), result))
+        save_expression.clicked.connect(lambda: ops.parse_expression(
+                                                expression_edit.text(),
+                                                expression_name.text(),
+                                                result))
         self.setLayout(grid)
         self.show()

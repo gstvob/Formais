@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QWidget, QComboBox, QPushButton, QTextEdit, QGridLayout, QLineEdit
+from PyQt5.QtWidgets import QWidget, QComboBox, QPushButton, QTextEdit, QGridLayout, QLineEdit, QTableWidget, QTableWidgetItem
 from Operations import GrammarOperations, ExpressionOperations
 from Forms import GrammarForm, ExpressionForm
+from Models import Automaton
 
 class GrammarEditor(QWidget):
 
@@ -115,3 +116,76 @@ class ExpressionEditor(QWidget):
 		self.choose_expression.removeItem(index)
 		self.choose_expression.insertItem(index, self.expression_name.text())
 		self.choose_expression.setCurrentIndex(index)
+
+
+class ConversionEditor(QWidget):
+
+	def __init__(self, op, grammars, automata):
+		super().__init__()
+		self.grammars = grammars
+		self.automata = automata
+		if op == 1:
+			self.grammar_automaton()
+		# else op == 2:
+		# 	self.automaton_grammar(automata)
+
+	#Fazer um combobox que permite eu escolher a gramática que eu quero Converter
+	def grammar_automaton(self):
+		self.grid = QGridLayout()
+		self.choose_grammar = QComboBox(self)
+		for i in self.grammars:
+			self.choose_grammar.addItem(i.name)
+		self.grid.addWidget(self.choose_grammar, 0,0)
+		self.setLayout(self.grid)
+		self.choose_grammar.activated[str].connect(lambda d: self.show_grammar(self.choose_grammar.currentText()))
+		# self.choose_grammar.activated[str].connect(lambda d: op.convert_to_automaton(self.choose_grammar.currentText()), automata)
+		self.show()
+
+	def show_grammar(self, grammar_name):
+		grammar = next(x for x in self.grammars if x.name == grammar_name)
+		ops = GrammarOperations(self.grammars)
+		regular_grammar = QTextEdit()
+		regular_grammar.setReadOnly(True)
+		regular_grammar.textCursor().insertText("G:P={\n"+grammar.p+"}")
+
+		convert = QPushButton("Convert to automaton")
+		convert.setStatusTip("Convert the current grammar to a NDFA(or dfa directly depending on the grammar)")
+		self.grid.addWidget(regular_grammar, 1,0)
+		self.grid.addWidget(convert, 2, 0)
+		convert.clicked.connect(lambda d: ops.convert_to_automaton(grammar, self))
+
+	def build_table(self, states, alphabet):
+		for state in states:
+			for i in state.transitions:
+				print("δ("+state.label+","+i.symbol+")="+i.target.label)
+
+		table_representation = QTableWidget()
+		table_representation.setColumnCount(len(alphabet))
+		table_representation.setRowCount(len(states))
+		states_labels = [x.label for x in states]
+		table_representation.setVerticalHeaderLabels(states_labels)
+		table_representation.setHorizontalHeaderLabels(alphabet)
+		i = 0
+		for state in states:
+			header = table_representation.verticalHeaderItem(i)
+			for j in range(len(alphabet)):
+				symbol = table_representation.horizontalHeaderItem(j)
+				transition = [x.target for x in state.transitions if x.symbol == symbol.text()]
+				target_states = ""
+				for tst in transition:
+					target_states+=tst.label+" "
+				newItem = QTableWidgetItem(target_states)
+				table_representation.setItem(i, j, newItem)
+
+			i+=1
+
+		save_automaton = QPushButton("Save Automaton")
+		save_automaton.clicked.connect(lambda d: self.save_automata(states, alphabet))
+		self.grid.addWidget(table_representation, 1, 1)
+		self.grid.addWidget(save_automaton, 2,1)
+	def save_automata(self, states, alphabet):
+		automaton = Automaton(self.choose_grammar.currentText(), states, alphabet)
+		self.automata.append(automaton)
+		print(automaton.non_deterministic)
+		
+	# def automaton_grammar(self, automata):
