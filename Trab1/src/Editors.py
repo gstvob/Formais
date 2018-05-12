@@ -164,12 +164,15 @@ class ConversionEditor(QWidget):
 		convert.clicked.connect(lambda d: ops.convert_to_automaton(grammar, self))
 
 	def show_automaton(self, automaton_name):
-		op = AutomatonOperations(self.automata)
 		automaton = next(x for x in self.automata if x.name == automaton_name)
+		ops = AutomatonOperations(self.automata)
 		self.build_table(automaton.states, automaton.alphabet, True)
-		op.convert_to_grammar(automaton, self)
+		convert_to_grammar = QPushButton("Convert to grammar")
+		convert_to_grammar.setStatusTip("Convert this automaton to a regular grammar")
+		convert_to_grammar.clicked.connect(lambda d: ops.convert_to_grammar(automaton, self))
+		self.grid.addWidget(convert_to_grammar, 2, 1)
 
-	#colocar a opção de determinizar ou minimizar o automato
+	#colocar a opção de determinizar ou minimizar o automato-
 	#quando determinizar o automato eu substituo a table pela determinizada
 	#depois de determinizar o autômato eu mostro o minimizar, se clicar
 	#quando minimizar o automato ele substitui.
@@ -204,9 +207,41 @@ class ConversionEditor(QWidget):
 			save_automaton.clicked.connect(lambda d: self.save_automata(states, alphabet))
 			self.grid.addWidget(save_automaton, 2,1)
 
+	def print_productions(self, prod):
+		productions = QTextEdit()
+		productions.setReadOnly(True)
+		productions.textCursor().insertText(prod)
+
+		save_grammar = QPushButton("Save Grammar")
+		save_grammar.clicked.connect(lambda d: self.save_grammar(prod))
+		self.grid.addWidget(productions, 1,0)
+		self.grid.addWidget(save_grammar, 2, 0)
+
+
 	def save_automata(self, states, alphabet):
-		name, ok = QInputDialog().getText(self,"Input Dialog", "Enter a name for this automaton")
-		if ok:
-			automaton = Automaton(str(name), states, alphabet)
-			self.automata.append(automaton)
-			print(automaton.non_deterministic)
+		saved = False
+
+		while not saved:			
+			name, ok = QInputDialog().getText(self,"Input Dialog", "Enter a name for this automaton")
+			if ok:
+				if not any(x.name == name for x in self.automata) and name != "":			
+					automaton = Automaton(str(name), states, alphabet)
+					self.automata.append(automaton)
+					print(automaton.non_deterministic)
+					saved = True
+			else:
+				break
+
+
+	def save_grammar(self, prod):
+		saved = False
+		while not saved:
+			name, ok = QInputDialog().getText(self,"Input Dialog", "Enter a name for this grammar")
+			if ok:
+				if not any(x.name == name for x in self.grammars) and name != "":				
+					grammar = RegularGrammar(str(name), prod)
+					self.grammars.append(grammar)
+					saved = True
+			else:
+				break
+					

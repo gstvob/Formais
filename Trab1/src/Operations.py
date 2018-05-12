@@ -16,15 +16,22 @@ class AutomatonOperations:
     def __init__(self, automata):
         self.automata = automata
     
+    #testar mais
     def convert_to_grammar(self, automaton, editor):
         vn = [x.label for x in automaton.states]
         vt = automaton.alphabet
         productions = ""
+        if automaton.states[0].acceptance:
+            productions += vn[0]+"->&|"
+        else:
+            productions += vn[0]+"->"
+
         for i in vn:
             transitions = next(x.transitions for x in automaton.states if x.label == i)
             non_empty = [y for y in transitions if y.target.label != "-"]
             if non_empty:
-                productions += i+"->"
+                if i != vn[0]:
+                    productions += i+"->"
                 for j in transitions:
                     if j.target.label != "-":
                         if j.target.acceptance:
@@ -32,6 +39,7 @@ class AutomatonOperations:
                         else:
                             productions += j.symbol+j.target.label+"|"
                 productions = productions[:-1] + "\n"
+        editor.print_productions(productions)
 
 class GrammarOperations:
 
@@ -41,7 +49,7 @@ class GrammarOperations:
     def parse_grammar(self, grammar, name, result, update=False, change_name=True):
         result.clear()
         text = grammar.replace(" ", "")
-        regex = re.compile(r'([A-Z][0-9]?->([a-z0-9][A-Z]?|\&)([|][a-z0-9][A-Z]?)*(\n|\Z))*')
+        regex = re.compile(r'([A-Z]->([a-z0-9][A-Z]?|\&)([|][a-z0-9][A-Z]?)*(\n|\Z))*')
         match = regex.match(text)
 
         if (any(x.name == name for x in self.grammars) or name == "") and change_name:
@@ -114,12 +122,13 @@ class GrammarOperations:
                 rules = producao.split(producao[0]+"->")[1].split("|")
             trsts = []
             for i in rules:
-                if len(i) > 1:
-                    target = next(x for x in states if x.label == i[1])
-                    trsts.append(Transition(target, i[0]))
-                else:
-                    target = next(x for x in states if x.label == "$")
-                    trsts.append(Transition(target, i[0]))
+                if i != "&":
+                    if len(i) > 1:
+                        target = next(x for x in states if x.label == i[1])
+                        trsts.append(Transition(target, i[0]))
+                    else:
+                        target = next(x for x in states if x.label == "$")
+                        trsts.append(Transition(target, i[0]))
             for i in alphabet:
                 if not any(i in str for str in rules):
                     target = State("-")

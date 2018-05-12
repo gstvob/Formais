@@ -1,3 +1,23 @@
+ walk = 0
+ while(walk < len(productions)):
+            p = productions[walk]
+            state = next(x for x in states if x.label == p[0])
+            rules = p.split(p[0]+"->")
+            rules = rules[1].split("|")
+            trsts = []
+            for i in rules :
+                if len(i) > 1:
+                    target = next(x for x in states if x.label == i[1])
+                    trsts.append(Transition(target, i[0]))
+                else:
+                    target = next(x for x in states if x.label == "$")
+                    trsts.append(Transition(target, i[0]))
+            for i in alphabet:
+                if not any(i in str for str in rules):
+                    target = State("-")
+                    trsts.append(Transition(target, i))
+            state.insert_transitions(trsts)
+            walk+=1
 
 CASOS GRAMATICAS REGULARES.
 
