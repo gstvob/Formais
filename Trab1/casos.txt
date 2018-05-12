@@ -1,3 +1,8 @@
+        # for state in states:
+        #   for i in state.transitions:
+        #       print("δ("+state.label+","+i.symbol+")="+i.target.label)
+
+
  walk = 0
  while(walk < len(productions)):
             p = productions[walk]

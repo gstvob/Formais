@@ -172,20 +172,26 @@ class ConversionEditor(QWidget):
 		convert_to_grammar.clicked.connect(lambda d: ops.convert_to_grammar(automaton, self))
 		self.grid.addWidget(convert_to_grammar, 2, 1)
 
-	#colocar a opção de determinizar ou minimizar o automato-
-	#quando determinizar o automato eu substituo a table pela determinizada
+	#colocar a opção de minimizar o automato-
 	#depois de determinizar o autômato eu mostro o minimizar, se clicar
 	#quando minimizar o automato ele substitui.
 	def build_table(self, states, alphabet, alter=False):
 		ops = AutomatonOperations(self.automata)
-		# for state in states:
-		# 	for i in state.transitions:
-		# 		print("δ("+state.label+","+i.symbol+")="+i.target.label)
 
 		table_representation = QTableWidget()
 		table_representation.setColumnCount(len(alphabet))
 		table_representation.setRowCount(len(states))
-		states_labels = [x.label for x in states]
+		states_labels = []
+		
+		for x in states:
+			label = ""
+			if x.acceptance:
+				label+= "*"
+			if x == states[0]:
+				label += "->"
+			label += x.label
+			states_labels.append(label)
+
 		table_representation.setVerticalHeaderLabels(states_labels)
 		table_representation.setHorizontalHeaderLabels(alphabet)
 		i = 0
@@ -199,10 +205,10 @@ class ConversionEditor(QWidget):
 					target_states+=tst.label+" "
 				newItem = QTableWidgetItem(target_states)
 				table_representation.setItem(i, j, newItem)
-
 			i+=1
 
 		self.grid.addWidget(table_representation, 1, 1)
+		
 		if not alter:
 			save_automaton = QPushButton("Save Automaton")
 			determinize = QPushButton("Determinize")
