@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from Models import RegularGrammar, RegularExpression, State, Automaton, Transition
+from Models import *
 import re
 
 #Classe que contém as operações realizadas em gramáticas.
@@ -10,6 +10,28 @@ import re
 #o método updateGrammar é utilizado para atualizar uma gramática.
 #O método grammar_automaton utiliza o algoritmo visto em aula para passar
 #uma gramática regular para um autômato finito.
+
+class AutomatonOperations:
+    
+    def __init__(self, automata):
+        self.automata = automata
+    
+    def convert_to_grammar(self, automaton, editor):
+        vn = [x.label for x in automaton.states]
+        vt = automaton.alphabet
+        productions = ""
+        for i in vn:
+            transitions = next(x.transitions for x in automaton.states if x.label == i)
+            non_empty = [y for y in transitions if y.target.label != "-"]
+            if non_empty:
+                productions += i+"->"
+                for j in transitions:
+                    if j.target.label != "-":
+                        if j.target.acceptance:
+                            productions += j.symbol+"|"
+                        else:
+                            productions += j.symbol+j.target.label+"|"
+                productions = productions[:-1] + "\n"
 
 class GrammarOperations:
 
@@ -76,28 +98,22 @@ class GrammarOperations:
             old_grammar.set_productions(editor.result.toPlainText())
             editor.update_combobox()
 
-    #Achar uma forma de colocar - para as transições não definidas.
+    #testar mais
     def convert_to_automaton(self, grammar, editor):
         states = [State(x) for x in grammar.vn]
         alphabet = grammar.vt
         extra = State("$", True)
         states.append(extra)
-        #Colocando transições "-"  no estado novo
-        for i in alphabet:
-            extra.add_transition(Transition(State("-"), i))
-        ##products agora tem as produções em um array separadas como.
-        #["S->a|bB","B->aB|a"]
         productions = grammar.p.split("\n")
         if "&" in productions[0]:
             states[0].set_acceptance(True)
-        walk = 0
-        while(walk < len(productions)):
-            p = productions[walk]
-            state = next(x for x in states if x.label == p[0])
-            rules = p.split(p[0]+"->")
-            rules = rules[1].split("|")
+        for state in states:
+            rules = []
+            if state.label in [x[0] for x in productions]:
+                producao = next(x for x in productions if state.label == x[0])
+                rules = producao.split(producao[0]+"->")[1].split("|")
             trsts = []
-            for i in rules :
+            for i in rules:
                 if len(i) > 1:
                     target = next(x for x in states if x.label == i[1])
                     trsts.append(Transition(target, i[0]))
@@ -109,7 +125,6 @@ class GrammarOperations:
                     target = State("-")
                     trsts.append(Transition(target, i))
             state.insert_transitions(trsts)
-            walk+=1
         editor.build_table(states, alphabet)
 
 class ExpressionOperations:

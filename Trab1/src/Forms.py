@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QPushButton,QWidget, QTextEdit,QLineEdit, QLabel, QGridLayout
-from Operations import GrammarOperations, ExpressionOperations
+from Operations import *
 
 class GrammarForm(QWidget):
     def __init__(self, grammars):

@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-
 import sys
-import gc
 from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAction, qApp)
-from Forms import GrammarForm, ExpressionForm
-from Views import GrammarView, ExpressionView, AutomatonView
-from Editors import GrammarEditor, ExpressionEditor, ConversionEditor
+from Forms import *
+from Views import *
+from Editors import *
 
 class MainWindow(QMainWindow):
 
@@ -65,6 +63,10 @@ class MainWindow(QMainWindow):
         conversion = ConversionEditor(1, self.grammars, self.automata)
         self.setCentralWidget(conversion)
 
+    def _convert_automaton_grammar(self):
+        conversion = ConversionEditor(2, self.grammars, self.automata)
+        self.setCentralWidget(conversion)
+
     def set_newMenu(self, new_menu):
 
         new_regularG = QAction("&Regular Grammar", self)
@@ -117,9 +119,15 @@ class MainWindow(QMainWindow):
         grammar_automaton.setStatusTip("Convert a regular grammar to automaton")
         grammar_automaton.triggered.connect(self._convert_grammar_automaton)
 
+        automaton_grammar = QAction("&Convert automaton to grammar", self)
+        automaton_grammar.setStatusTip("Convert a finite automaton to a regular grammar")
+        automaton_grammar.triggered.connect(self._convert_automaton_grammar)
+
         conversion_menu.addAction(grammar_automaton)
+        conversion_menu.addAction(automaton_grammar)
 
 if __name__ == "__main__":
+
     app = QApplication(sys.argv)
     GUI = MainWindow()
     sys.exit(app.exec_())
