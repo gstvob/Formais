@@ -41,6 +41,59 @@ class AutomatonOperations:
                 productions = productions[:-1] + "\n"
         editor.print_productions(productions)
 
+    #testar mais
+    def ndfa_to_dfa(self, automaton, editor):
+        NDstates = automaton.states
+        Dstates = []
+        Dstates.append(State(NDstates[0].label, NDstates[0].acceptance))
+        for j in automaton.alphabet:
+            tx = [x for x in NDstates[0].transitions if x.symbol == j]
+            label = "["
+            acceptance = False
+            for k in tx:
+                if k.target.acceptance:
+                    acceptance = True
+                if k.target.label != "-":
+                    label += k.target.label+","
+
+            if label == "[":
+                label = "-"
+                new_state = State(label, acceptance)
+            else :
+                label = label[:-1]+"]" 
+                new_state = State(label, acceptance)
+                Dstates.append(new_state)
+            Dstates[0].add_transition(Transition(new_state, j))
+
+        for d in Dstates:
+            state = d.label
+            if d != Dstates[0]:
+                state = state[1:-1].split(",")
+                for i in automaton.alphabet:
+                    tx = []
+                    label = "["
+                    acceptance = False
+                    for k in state:
+                        nd = next(x for x in NDstates if x.label == k)
+                        tx += [x for x in nd.transitions if x.symbol == i]
+                    for l in tx:
+                        if l.target.acceptance:
+                            acceptance = True
+                        if l.target.label != "-":
+                            label += l.target.label+","
+                    if label == "[":
+                        label = "-"
+                        new_state = State(label, acceptance)
+                        d.add_transition(Transition(new_state, i))
+                    else :
+                        label = label[:-1]+"]" 
+                        new_state = State(label, acceptance)
+                        all_labels = [x.label for x in Dstates]
+                        if new_state.label not in all_labels:
+                            Dstates.append(new_state)
+                        d.add_transition(Transition(new_state, i))
+        editor.build_table(Dstates, automaton.alphabet)
+
 class GrammarOperations:
 
     def __init__(self, grammars):

@@ -177,9 +177,10 @@ class ConversionEditor(QWidget):
 	#depois de determinizar o autômato eu mostro o minimizar, se clicar
 	#quando minimizar o automato ele substitui.
 	def build_table(self, states, alphabet, alter=False):
-		for state in states:
-			for i in state.transitions:
-				print("δ("+state.label+","+i.symbol+")="+i.target.label)
+		ops = AutomatonOperations(self.automata)
+		# for state in states:
+		# 	for i in state.transitions:
+		# 		print("δ("+state.label+","+i.symbol+")="+i.target.label)
 
 		table_representation = QTableWidget()
 		table_representation.setColumnCount(len(alphabet))
@@ -204,8 +205,13 @@ class ConversionEditor(QWidget):
 		self.grid.addWidget(table_representation, 1, 1)
 		if not alter:
 			save_automaton = QPushButton("Save Automaton")
+			determinize = QPushButton("Determinize")
+			at = Automaton("$at", states, alphabet)
 			save_automaton.clicked.connect(lambda d: self.save_automata(states, alphabet))
-			self.grid.addWidget(save_automaton, 2,1)
+			determinize.clicked.connect(lambda d: ops.ndfa_to_dfa(at, self))
+			if at.non_deterministic:
+				self.grid.addWidget(determinize, 2,1)
+			self.grid.addWidget(save_automaton, 3,1)
 
 	def print_productions(self, prod):
 		productions = QTextEdit()

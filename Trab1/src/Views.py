@@ -1,6 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout, QTableWidget, QTableWidgetItem
 
-
 class View(QWidget):
 
 	def __init__(self, list):
