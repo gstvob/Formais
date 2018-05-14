@@ -1,3 +1,4 @@
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QComboBox, QPushButton, QTextEdit, QGridLayout, QLineEdit, QTableWidget, QTableWidgetItem, QInputDialog
 from Operations import *
 from Forms import *
@@ -204,6 +205,7 @@ class ConversionEditor(QWidget):
 				for tst in transition:
 					target_states+=tst.label+" "
 				newItem = QTableWidgetItem(target_states)
+				newItem.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled )
 				table_representation.setItem(i, j, newItem)
 			i+=1
 
@@ -223,12 +225,7 @@ class ConversionEditor(QWidget):
 		productions = QTextEdit()
 		productions.setReadOnly(True)
 		productions.textCursor().insertText(prod)
-
-		save_grammar = QPushButton("Save Grammar")
-		save_grammar.clicked.connect(lambda d: self.save_grammar(prod))
 		self.grid.addWidget(productions, 1,0)
-		self.grid.addWidget(save_grammar, 2, 0)
-
 
 	def save_automata(self, states, alphabet):
 		saved = False
@@ -245,15 +242,55 @@ class ConversionEditor(QWidget):
 				break
 
 
-	def save_grammar(self, prod):
-		saved = False
-		while not saved:
-			name, ok = QInputDialog().getText(self,"Input Dialog", "Enter a name for this grammar")
-			if ok:
-				if not any(x.name == name for x in self.grammars) and name != "":				
-					grammar = RegularGrammar(str(name), prod)
-					self.grammars.append(grammar)
-					saved = True
-			else:
-				break
-					
+class ExtraOperations(QWidget):
+
+	def __init__(self, grammars):
+		super().__init__()
+		self.grammars = grammars
+
+	def grammar_union(self, step=0, chosen1=""):
+		if (step == 0):
+			self.grid = QGridLayout()
+			choose_grammar1 = QComboBox(self)
+			self.g1 = QTextEdit()
+			self.g1.setReadOnly(True)
+			for i in self.grammars:
+				choose_grammar1.addItem(i.name)
+			choose_grammar1.activated[str].connect(lambda d: self.grammar_union(1, choose_grammar1.currentText()))
+			self.grid.addWidget(choose_grammar1, 0, 0)
+			self.grid.addWidget(self.g1, 1, 0)
+			self.setLayout(self.grid)
+			self.show()
+		else:
+			choose_grammar2 = QComboBox(self)
+			self.g2 = QTextEdit()
+			self.g2.setReadOnly(True)
+			self.g1.clear()
+			chosen1_prod = next(x.p for x in self.grammars if x.name == chosen1)
+			self.g1.textCursor().insertText(chosen1_prod)
+			for i in self.grammars:
+				if i.name != chosen1:
+					choose_grammar2.addItem(i.name)
+			choose_grammar2.activated[str].connect(lambda d: self.operate_union(chosen1, choose_grammar2.currentText()))
+			self.grid.addWidget(choose_grammar2, 0, 1)
+			self.grid.addWidget(self.g2, 1, 1)
+
+	def operate_union(self, grammar1, grammar2):
+		self.g2.clear()
+		op = GrammarOperations(self.grammars)
+		rg1 = next(x for x in self.grammars if x.name == grammar1)
+		rg2 = next(x for x in self.grammars if x.name == grammar2)
+		self.g2.textCursor().insertText(rg2.p)
+		operate = QPushButton("Perform Union")
+		operate.setStatusTip("Perform a union operation between two grammars")
+
+		
+		operate.clicked.connect(lambda d: op.grammar_union(rg1, rg2, self))
+		self.grid.addWidget(operate, 2, 0)
+
+	def show_union(self, grammar):
+		result = QTextEdit()
+		result.setReadOnly(True)
+		result.textCursor().insertText(grammar)
+
+		self.grid.addWidget(result, 3, 1)

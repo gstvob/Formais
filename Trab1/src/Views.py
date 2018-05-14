@@ -1,3 +1,4 @@
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout, QTableWidget, QTableWidgetItem
 
 class View(QWidget):
@@ -61,6 +62,7 @@ class AutomatonView(View):
 				for tst in transition:
 					target_states+=tst.label+" "
 				newItem = QTableWidgetItem(target_states)
+				newItem.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled)
 				table_representation.setItem(i, j, newItem)
 			i+=1
 		self.grid.addWidget(table_representation, 1, 0)

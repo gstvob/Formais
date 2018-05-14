@@ -2,7 +2,8 @@
 
 from Models import *
 import re
-
+import random
+import string
 #Classe que contém as operações realizadas em gramáticas.
 #O método parse_grammar serve para verificar se dadas as produções entradas
 #a gramática é uma gramática válida, e o método validate grammar verifica se
@@ -15,7 +16,7 @@ class AutomatonOperations:
     
     def __init__(self, automata):
         self.automata = automata
-           
+
     def convert_to_grammar(self, automaton, editor):
         vn = [x.label for x in automaton.states]
         vt = automaton.alphabet
@@ -106,7 +107,7 @@ class GrammarOperations:
     def parse_grammar(self, grammar, name, result, update=False, change_name=True):
         result.clear()
         text = grammar.replace(" ", "")
-        regex = re.compile(r'([A-Z]->([a-z0-9][A-Z]?|\&)([|][a-z0-9][A-Z]?)*(\n|\Z))*')
+        regex = re.compile(r'([A-Z][0-9]?->([a-z0-9][A-Z]?|\&)([|][a-z0-9][A-Z]?)*(\n|\Z))*')
         match = regex.match(text)
 
         if (any(x.name == name for x in self.grammars) or name == "") and change_name:
@@ -163,7 +164,6 @@ class GrammarOperations:
             old_grammar.set_productions(editor.result.toPlainText())
             editor.update_combobox()
 
-    #testar mais
     def convert_to_automaton(self, grammar, editor):
         states = [State(x) for x in grammar.vn]
         alphabet = grammar.vt
@@ -192,6 +192,53 @@ class GrammarOperations:
                     trsts.append(Transition(target, i))
             state.insert_transitions(trsts)
         editor.build_table(states, alphabet)
+
+    def grammar_union(self, grammar1, grammar2, editor):
+        p1 = grammar1.p
+        p2 = grammar2.p
+        union = ""
+        epsilon = False
+        if "&" in p1:
+            p1 = p1.replace("&|", "")
+            epsilon = True
+        if "&" in p2:
+            p2 = p2.replace("&|", "")
+            epsilon = True
+
+        if set(grammar1.vn) <= set(grammar2.vn) or set(grammar1.vn) >= set(grammar2.vn):
+            editor.show_union("Error while making this union") 
+        else:      
+            prods1 = p1.split("\n")
+            prods2 = p2.split("\n")
+            if epsilon:
+                union = "Ω->&|"
+            else:
+                union = "Ω->"
+            union += prods1[0].split("->")[1]+"|"+prods2[0].split("->")[1]+"\n"
+            for i in prods1:
+                union += i+"\n"
+            for i in prods2:
+                union += i+"\n"
+            editor.show_union(union)
+            print("Ω".isupper())
+
+    def grammar_concat(self, grammar1, grammar2, editor):
+        p1 = grammar1.p
+        p2 = grammar2.p
+
+        concat = ""
+        epsilon = False
+        if "&" in p1:
+            p1 = p1.replace("&|", "")
+            epsilon = True
+        if "&" in p2:
+            p2 = p2.replace("&|", "")
+            epsilon = True
+
+        if set(grammar1.vn) <= set(grammar2.vn) or set(grammar1.vn) >= set(grammar2.vn):
+            print("error concat")
+        else:
+            
 
 class ExpressionOperations:
     def __init__(self, expressions):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
-from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAction, qApp)
+from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAction, qApp, QMenu)
 from Forms import *
 from Views import *
 from Editors import *
@@ -22,11 +22,13 @@ class MainWindow(QMainWindow):
         list_menu = menubar.addMenu("&List")
         edit_menu = menubar.addMenu("&Edit")
         conversion_menu = menubar.addMenu("&Convert")
+        operation_menu = menubar.addMenu("&Operations")
 
         self.set_newMenu(new_menu)
         self.set_listMenu(list_menu)
         self.set_editMenu(edit_menu)
         self.set_conversion_menu(conversion_menu)
+        self.set_operations_menu(operation_menu)
         self.setGeometry(300, 300, 560, 320)
         self.setWindowTitle('Aplicação para manipulação de ER, AF, E GR')
         self.show()
@@ -66,6 +68,11 @@ class MainWindow(QMainWindow):
     def _convert_automaton_grammar(self):
         conversion = ConversionEditor(2, self.grammars, self.automata)
         self.setCentralWidget(conversion)
+
+    def _grammar_union(self):
+        union = ExtraOperations(self.grammars)
+        union.grammar_union()
+        self.setCentralWidget(union)
 
     def set_newMenu(self, new_menu):
 
@@ -125,6 +132,15 @@ class MainWindow(QMainWindow):
 
         conversion_menu.addAction(grammar_automaton)
         conversion_menu.addAction(automaton_grammar)
+
+    def set_operations_menu(self, operations_menu):
+        grammar_menu = QMenu("&Grammar", self)
+        union_operation = QAction("Union", self)
+        union_operation.setStatusTip("Union between two grammars")
+        union_operation.triggered.connect(self._grammar_union)
+        grammar_menu.addAction(union_operation)
+
+        operations_menu.addMenu(grammar_menu)
 
 if __name__ == "__main__":
 
