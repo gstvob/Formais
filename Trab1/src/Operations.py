@@ -193,6 +193,7 @@ class GrammarOperations:
             state.insert_transitions(trsts)
         editor.build_table(states, alphabet)
 
+    #fazer o barato de trocar os não terminais ao invés de dar erro
     def grammar_union(self, grammar1, grammar2, editor):
         p1 = grammar1.p
         p2 = grammar2.p
@@ -219,9 +220,10 @@ class GrammarOperations:
                 union += i+"\n"
             for i in prods2:
                 union += i+"\n"
-            editor.show_union(union)
+            editor.show(union)
             print("Ω".isupper())
 
+    #fazer o barato de trocar os não terminais ao invés de dar erro
     def grammar_concat(self, grammar1, grammar2, editor):
         p1 = grammar1.p
         p2 = grammar2.p
@@ -238,7 +240,55 @@ class GrammarOperations:
         if set(grammar1.vn) <= set(grammar2.vn) or set(grammar1.vn) >= set(grammar2.vn):
             print("error concat")
         else:
-            
+            g2s = p2[0];
+            for i in range(len(p1)):            
+                try :
+                    if p1[i].islower() and (p1[i+1] == "|" or p1[i+1] == "\n"):
+                        concat += p1[i]+g2s
+                    else:
+                        concat += p1[i]
+                except IndexError:
+                    concat += p1[i]+g2s 
+            if epsilon:
+                epsilon_concat = "Ω->&|"
+                prods1 = concat.split("\n")
+                for i in prods1:
+                    epsilon_concat+=i
+                concat = epsilon_concat+"\n"+concat
+            concat += "\n"+p2
+        editor.show(concat)
+
+    def kleene_star(self, grammar, editor):
+        p = grammar.p
+        S = p[0]
+        new_p = ""
+        prods = p.split("\n")
+        new_prods = []
+
+        if "&" in p:
+            p = p.replace("&|", "")
+            epsilon = True
+
+        for i in prods:
+            terminals = i[0]
+            rules = i.split("->")[1].split("|")
+            new_rules = rules
+            added = 0
+            for j in rules:
+                if len(j)==1:
+                    added=1
+                    rules.append(j+S)
+            prod = terminals+"->"
+            for r in rules:
+                prod += r+"|"
+            prod = prod[:-1]
+            new_prods.append(prod)
+        for i in new_prods:
+            new_p += i+"\n"
+        new_p = new_p[:-1]
+    if epsilon:
+        new_p = "Ω->&|"+new_p
+    editor.show(new_p)
 
 class ExpressionOperations:
     def __init__(self, expressions):

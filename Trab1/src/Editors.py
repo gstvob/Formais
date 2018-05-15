@@ -243,12 +243,12 @@ class ConversionEditor(QWidget):
 
 
 class ExtraOperations(QWidget):
-
+	
 	def __init__(self, grammars):
 		super().__init__()
 		self.grammars = grammars
 
-	def grammar_union(self, step=0, chosen1=""):
+	def binaryOp(self, step=0, chosen1=""):
 		if (step == 0):
 			self.grid = QGridLayout()
 			choose_grammar1 = QComboBox(self)
@@ -256,7 +256,7 @@ class ExtraOperations(QWidget):
 			self.g1.setReadOnly(True)
 			for i in self.grammars:
 				choose_grammar1.addItem(i.name)
-			choose_grammar1.activated[str].connect(lambda d: self.grammar_union(1, choose_grammar1.currentText()))
+			choose_grammar1.activated[str].connect(lambda d: self.binaryOp(1, choose_grammar1.currentText()))
 			self.grid.addWidget(choose_grammar1, 0, 0)
 			self.grid.addWidget(self.g1, 1, 0)
 			self.setLayout(self.grid)
@@ -271,24 +271,62 @@ class ExtraOperations(QWidget):
 			for i in self.grammars:
 				if i.name != chosen1:
 					choose_grammar2.addItem(i.name)
-			choose_grammar2.activated[str].connect(lambda d: self.operate_union(chosen1, choose_grammar2.currentText()))
+			choose_grammar2.activated[str].connect(lambda d: self.operate(chosen1, choose_grammar2.currentText()))
 			self.grid.addWidget(choose_grammar2, 0, 1)
 			self.grid.addWidget(self.g2, 1, 1)
 
-	def operate_union(self, grammar1, grammar2):
+	def grammar_union(self):
+		self.operation = "Union"
+		self.binaryOp()
+
+	def grammar_concat(self):
+		self.operation = "Concat"
+		self.binaryOp()
+
+
+	def kleene_star(self):
+		self.grid = QGridLayout()
+		choose_grammar = QComboBox(self)
+		self.g1 = QTextEdit()
+		self.g1.setReadOnly(True)
+		for i in self.grammars:
+			choose_grammar.addItem(i.name)
+		choose_grammar.activated[str].connect(self.operate_kleene)
+		self.grid.addWidget(choose_grammar, 0, 0)
+		self.grid.addWidget(self.g1, 1, 0)
+		self.setLayout(self.grid)
+		self.show()
+
+
+	def operate_kleene(self, grammar):
+		self.g1.clear()
+		op = GrammarOperations(self.grammars)
+		rg = next(x for x in self.grammars if x.name == grammar)
+		self.g1.textCursor().insertText(rg.p)
+		operate = QPushButton("Perform a Kleene Star operation")
+		operate.setStatusTip("Perform a kleene star operation in a grammar")
+
+		operate.clicked.connect(lambda d: op.kleene_star(rg, self))
+
+		self.grid.addWidget(operate, 2, 0)
+
+	def operate(self, grammar1, grammar2):
 		self.g2.clear()
 		op = GrammarOperations(self.grammars)
 		rg1 = next(x for x in self.grammars if x.name == grammar1)
 		rg2 = next(x for x in self.grammars if x.name == grammar2)
 		self.g2.textCursor().insertText(rg2.p)
-		operate = QPushButton("Perform Union")
-		operate.setStatusTip("Perform a union operation between two grammars")
+		operate = QPushButton("Perform "+self.operation)
+		operate.setStatusTip("Perform a "+self.operation+" operation between two grammars")
 
-		
-		operate.clicked.connect(lambda d: op.grammar_union(rg1, rg2, self))
+
+		if (self.operation == "Union"):
+			operate.clicked.connect(lambda d: op.grammar_union(rg1, rg2, self))
+		else :
+			operate.clicked.connect(lambda d: op.grammar_concat(rg1, rg2, self))
 		self.grid.addWidget(operate, 2, 0)
 
-	def show_union(self, grammar):
+	def show(self, grammar):
 		result = QTextEdit()
 		result.setReadOnly(True)
 		result.textCursor().insertText(grammar)

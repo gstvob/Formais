@@ -73,6 +73,16 @@ class MainWindow(QMainWindow):
         union = ExtraOperations(self.grammars)
         union.grammar_union()
         self.setCentralWidget(union)
+    
+    def _grammar_concat(self):
+        concat = ExtraOperations(self.grammars)
+        concat.grammar_concat()
+        self.setCentralWidget(concat)
+
+    def _kleene_star(self):
+        kStar = ExtraOperations(self.grammars)
+        kStar.kleene_star()
+        self.setCentralWidget(kStar)
 
     def set_newMenu(self, new_menu):
 
@@ -138,7 +148,15 @@ class MainWindow(QMainWindow):
         union_operation = QAction("Union", self)
         union_operation.setStatusTip("Union between two grammars")
         union_operation.triggered.connect(self._grammar_union)
+        concat_operation = QAction("Concat", self)
+        concat_operation.setStatusTip("Concatenation between two grammars")
+        concat_operation.triggered.connect(self._grammar_concat)
+        kleene_star_op = QAction("Kleene Star", self)
+        kleene_star_op.setStatusTip("The kleene star of a grammar")
+        kleene_star_op.triggered.connect(self._kleene_star)
         grammar_menu.addAction(union_operation)
+        grammar_menu.addAction(concat_operation)
+        grammar_menu.addAction(kleene_star_op)
 
         operations_menu.addMenu(grammar_menu)
 
