@@ -4,6 +4,7 @@ from Models import *
 import re
 import random
 import string
+import itertools
 #Classe que contém as operações realizadas em gramáticas.
 #O método parse_grammar serve para verificar se dadas as produções entradas
 #a gramática é uma gramática válida, e o método validate grammar verifica se
@@ -49,19 +50,17 @@ class AutomatonOperations:
         Dstates.append(State(NDstates[0].label, NDstates[0].acceptance))
         for j in automaton.alphabet:
             tx = [x for x in NDstates[0].transitions if x.symbol == j]
-            label = "["
+            label = ""
             acceptance = False
             for k in tx:
                 if k.target.acceptance:
                     acceptance = True
                 if k.target.label != "-":
-                    label += k.target.label+","
-
-            if label == "[":
+                    label += k.target.label
+            if label == "":
                 label = "-"
                 new_state = State(label, acceptance)
             else :
-                label = label[1:-1]
                 label = "".join(sorted(label))
                 label = "["+label+"]"
                 new_state = State(label, acceptance)
@@ -71,10 +70,10 @@ class AutomatonOperations:
         for d in Dstates:
             state = d.label
             if d != Dstates[0]:
-                state = state[1:-1].split(",")
+                state = state[1:-1]
                 for i in automaton.alphabet:
                     tx = []
-                    label = "["
+                    label = ""
                     acceptance = False
                     for k in state:
                         nd = next(x for x in NDstates if x.label == k)
@@ -83,13 +82,13 @@ class AutomatonOperations:
                         if l.target.acceptance:
                             acceptance = True
                         if l.target.label != "-":
-                            label += l.target.label+","
-                    if label == "[":
+                            if l.target.label not in label:
+                                label += l.target.label
+                    if label == "":
                         label = "-"
                         new_state = State(label, acceptance)
                         d.add_transition(Transition(new_state, i))
                     else :
-                        label = label[1:-1]
                         label = "".join(sorted(label))
                         label = "["+label+"]" 
                         new_state = State(label, acceptance)
@@ -98,6 +97,113 @@ class AutomatonOperations:
                             Dstates.append(new_state)
                         d.add_transition(Transition(new_state, i))
         editor.build_table(Dstates, automaton.alphabet)
+
+    def minimize(self, automaton, editor):
+        #find reachable states x
+        #find alive states x
+        #complete automaton x
+        #make them pussy ass equivalence classes
+        states = automaton.states
+        alphabet = automaton.alphabet
+        reachable_states = []
+        reachable_states.append(states[0])
+        alive_states = []
+        alive_states_before = 0
+        for s in reachable_states:
+            for t in s.transitions:
+                if t.target not in reachable_states:
+                    reachable_states.append(t.target)
+
+        states = [x for x in states if x in reachable_states]
+        while True:
+            alive_states_before = len(alive_states)
+            for sT in states:
+                if sT.acceptance:
+                    if sT not in alive_states:
+                        alive_states.append(sT)
+                for t in sT.transitions:
+                    if t.target.acceptance or t.target in alive_states:
+                        if sT not in alive_states:
+                            alive_states.append(sT)
+            if len(alive_states) == alive_states_before:
+                break
+        
+        states = [x for x in states if x in alive_states]
+
+        self.complete_automata(states, alphabet)
+
+        #algoritmo de hopcroft
+
+        f = [x for x in states if x.acceptance]
+        k_f = [x for x in states if not x.acceptance]
+
+
+        '''
+        Step 1 − All the states Q are divided in two partitions − final states and non-final states and are denoted by P0.
+        All the states in a partition are 0th equivalent. Take a counter k and initialize it with 0.
+        Step 2 − Increment k by 1. For each partition in Pk, divide the states in Pk into two partitions if they are k-distinguishable. 
+        Two states within this partition X and Y are k-distinguishable 
+        if there is an input S such that δ(X, S) and δ(Y, S) are (k-1)-distinguishable.
+
+        Step 3 − If Pk ≠ Pk-1, repeat Step 2, otherwise go to Step 4.
+
+        Step 4 − Combine kth equivalent sets and make them the new states of the reduced DFA.
+        '''
+        P = {frozenset(f), frozenset(k_f)}
+        Pn_1 = P
+        for Pn in P:
+            for a in alphabet:
+                if Pn == Pn_1:
+                    break
+            break
+
+    '''
+    S->aA|bS|b
+    A->aS|bA|a
+    '''
+
+    def complete_automata(self, states, alphabet):
+        phi = State("φ")
+        alive = False
+        if phi not in states:
+            for a in alphabet:
+                phi.add_transition(Transition(phi, a))
+            for s in states:
+                for t in s.transitions:
+                    if t.target.label == "-":
+                        alive = True
+                        s.replace_transition(Transition(phi, t.symbol), t)
+            if alive:
+                states.append(phi)
+
+    def parse_input(self, states, alphabet, inp):
+        self.complete_automata(states, alphabet)
+        currState = states[0]
+        for c in inp:
+            txs = currState.transitions
+            for x in txs:
+                if x.symbol == c:
+                    currState = next(y for y in states if x.target.label == y.label)
+                    break
+        if currState.acceptance:
+            return True
+        else:
+            return False
+
+    def recognize(self, automaton, inp, editor):
+        #determinizar e completar antes.
+        if automaton.non_deterministic:
+            print("determinize este autômato primeiro")
+        else:
+            accept = self.parse_input(automaton.states, automaton.alphabet, inp)
+            editor.recognized(accept)
+
+    def generate_n_input(self, automaton, n, editor):
+        enum = []
+        for item in itertools.product(automaton.alphabet, repeat=int(n)):
+            if self.parse_input(automaton.states, automaton.alphabet, "".join(item)):
+                enum.append("".join(item))
+        editor.enum(enum)
 
 class GrammarOperations:
 
@@ -264,7 +370,7 @@ class GrammarOperations:
         new_p = ""
         prods = p.split("\n")
         new_prods = []
-
+        epsilon = False
         if "&" in p:
             p = p.replace("&|", "")
             epsilon = True
@@ -286,9 +392,9 @@ class GrammarOperations:
         for i in new_prods:
             new_p += i+"\n"
         new_p = new_p[:-1]
-    if epsilon:
-        new_p = "Ω->&|"+new_p
-    editor.show(new_p)
+        if epsilon:
+            new_p = "Ω->&|"+new_p
+        editor.show(new_p)
 
 class ExpressionOperations:
     def __init__(self, expressions):

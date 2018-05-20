@@ -214,11 +214,15 @@ class ConversionEditor(QWidget):
 		if not alter:
 			save_automaton = QPushButton("Save Automaton")
 			determinize = QPushButton("Determinize")
+			minimize = QPushButton("Minimize")
 			at = Automaton("$at", states, alphabet)
 			save_automaton.clicked.connect(lambda d: self.save_automata(states, alphabet))
 			determinize.clicked.connect(lambda d: ops.ndfa_to_dfa(at, self))
+			minimize.clicked.connect(lambda d: ops.minimize(at, self))
 			if at.non_deterministic:
 				self.grid.addWidget(determinize, 2,1)
+			else:
+				self.grid.addWidget(minimize, 2, 1)
 			self.grid.addWidget(save_automaton, 3,1)
 
 	def print_productions(self, prod):
@@ -283,7 +287,6 @@ class ExtraOperations(QWidget):
 		self.operation = "Concat"
 		self.binaryOp()
 
-
 	def kleene_star(self):
 		self.grid = QGridLayout()
 		choose_grammar = QComboBox(self)
@@ -296,7 +299,6 @@ class ExtraOperations(QWidget):
 		self.grid.addWidget(self.g1, 1, 0)
 		self.setLayout(self.grid)
 		self.show()
-
 
 	def operate_kleene(self, grammar):
 		self.g1.clear()
@@ -332,3 +334,139 @@ class ExtraOperations(QWidget):
 		result.textCursor().insertText(grammar)
 
 		self.grid.addWidget(result, 3, 1)
+
+class AutomataEditor(QWidget): 
+	def __init__(self, automata):
+		super().__init__()
+		self.automata = automata
+
+
+	def automaton_test_input(self):
+		self.grid = QGridLayout(self)
+		choose_automaton = QComboBox(self)
+		for i in self.automata:
+			choose_automaton.addItem(i.name)
+
+		choose_automaton.activated[str].connect(self._input)
+		self.grid.addWidget(choose_automaton, 0, 0)
+		self.setLayout(self.grid)
+		self.show()
+
+	def n_size_enumerator(self):
+		self.grid = QGridLayout(self)
+		choose_automaton = QComboBox(self)
+		for i in self.automata:
+			choose_automaton.addItem(i.name)
+
+		choose_automaton.activated[str].connect(self._enumerate)
+		self.grid.addWidget(choose_automaton, 0, 0)
+		self.setLayout(self.grid)
+		self.show()
+
+	def _enumerate(self, automaton_name):
+		op = AutomatonOperations(self.automata)
+		automaton = next(x for x in self.automata if x.name == automaton_name)
+		n = QLineEdit(self)
+		n.setPlaceholderText("Size")
+		enum = QPushButton("Enumerate")
+		enum.setStatusTip("Enumerate sentences of size n accepted by automaton")
+		enum.clicked.connect(lambda d: op.generate_n_input(automaton, n.text(), self))
+
+		states = automaton.states
+		alphabet = automaton.alphabet
+		table_representation = QTableWidget()
+		table_representation.setColumnCount(len(alphabet))
+		table_representation.setRowCount(len(states))
+		states_labels = []
+
+		for x in states:
+			label = ""
+			if x.acceptance:
+				label+= "*"
+			if x == states[0]:
+				label += "->"
+			label += x.label
+			states_labels.append(label)
+
+		table_representation.setVerticalHeaderLabels(states_labels)
+		table_representation.setHorizontalHeaderLabels(alphabet)
+		i = 0
+		for state in states:
+			header = table_representation.verticalHeaderItem(i)
+			for j in range(len(alphabet)):
+				symbol = table_representation.horizontalHeaderItem(j)
+				transition = [x.target for x in state.transitions if x.symbol == symbol.text()]
+				target_states = ""
+				for tst in transition:
+					target_states+=tst.label+" "
+				newItem = QTableWidgetItem(target_states)
+				newItem.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled )
+				table_representation.setItem(i, j, newItem)
+			i+=1
+
+		self.grid.addWidget(table_representation, 1, 0)
+		self.grid.addWidget(n, 2, 0)
+		self.grid.addWidget(enum, 3, 0)
+	def _input(self, automaton_name):
+		op = AutomatonOperations(self.automata)
+		automaton = next(x for x in self.automata if x.name == automaton_name)
+		inp = QLineEdit(self)
+		inp.setPlaceholderText("Input")
+		check = QPushButton("Check Input")
+		check.setStatusTip("Check if input is accepted by this automaton")
+		check.clicked.connect(lambda d: op.recognize(automaton,inp.text(), self))
+
+		states = automaton.states
+		alphabet = automaton.alphabet
+		table_representation = QTableWidget()
+		table_representation.setColumnCount(len(alphabet))
+		table_representation.setRowCount(len(states))
+		states_labels = []
+
+		for x in states:
+			label = ""
+			if x.acceptance:
+				label+= "*"
+			if x == states[0]:
+				label += "->"
+			label += x.label
+			states_labels.append(label)
+
+		table_representation.setVerticalHeaderLabels(states_labels)
+		table_representation.setHorizontalHeaderLabels(alphabet)
+		i = 0
+		for state in states:
+			header = table_representation.verticalHeaderItem(i)
+			for j in range(len(alphabet)):
+				symbol = table_representation.horizontalHeaderItem(j)
+				transition = [x.target for x in state.transitions if x.symbol == symbol.text()]
+				target_states = ""
+				for tst in transition:
+					target_states+=tst.label+" "
+				newItem = QTableWidgetItem(target_states)
+				newItem.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled )
+				table_representation.setItem(i, j, newItem)
+			i+=1
+
+		self.grid.addWidget(table_representation, 1, 0)
+		self.grid.addWidget(inp, 2, 0)
+		self.grid.addWidget(check, 3, 0)
+
+	def recognized(self, accept):
+		result = QLineEdit(self)
+		result.setReadOnly(True)
+		if accept:
+			result.insert("Accepts")
+		else:
+			result.insert("Rejects")
+
+		self.grid.addWidget(result,4,0)
+
+	def enum(self, sentences):
+		result = QTextEdit(self)
+		result.setReadOnly(True)
+
+		for sentence in sentences:
+			result.textCursor().insertText(sentence+"\n")
+
+		self.grid.addWidget(result,4,0)		

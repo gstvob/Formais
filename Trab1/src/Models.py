@@ -46,6 +46,7 @@ class Automaton:
         self._set_finals()
         self.dfa_or_ndfa()
 
+
     def _set_finals(self):
         self.f = [x for x in self.states if x.acceptance == True]
 
@@ -69,6 +70,9 @@ class State:
         self.label = label
         self.transitions = []
 
+    def __repr__(self):
+        return self.label
+
     def set_acceptance(self, status):
         self.acceptance = status
 
@@ -76,6 +80,10 @@ class State:
         self.transitions=transitions
     def add_transition(self, transition):
         self.transitions.append(transition)
+    def replace_transition(self, new_t, old_t):
+        self.transitions[self.transitions.index(old_t)] = new_t  
+
+
 class Transition:
     def __init__(self, target, symbol):
         self.symbol = symbol

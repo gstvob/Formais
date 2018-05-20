@@ -84,6 +84,16 @@ class MainWindow(QMainWindow):
         kStar.kleene_star()
         self.setCentralWidget(kStar)
 
+    def _check_input(self):
+        check_input = AutomataEditor(self.automata)
+        check_input.automaton_test_input()
+        self.setCentralWidget(check_input)
+
+    def _enumerate_sentences(self):
+        enumerate_sentences = AutomataEditor(self.automata)
+        enumerate_sentences.n_size_enumerator()
+        self.setCentralWidget(enumerate_sentences)
+
     def set_newMenu(self, new_menu):
 
         new_regularG = QAction("&Regular Grammar", self)
@@ -158,6 +168,15 @@ class MainWindow(QMainWindow):
         grammar_menu.addAction(concat_operation)
         grammar_menu.addAction(kleene_star_op)
 
+        check_input = QAction("Recognize Input", self)
+        check_input.setStatusTip("Check if automaton recognizes given input")
+        check_input.triggered.connect(self._check_input)
+        enumerate_sentences = QAction("Enumerate Sentences", self)
+        enumerate_sentences.setStatusTip("Enumerate the sentences of given size n")
+        enumerate_sentences.triggered.connect(self._enumerate_sentences)
+
+        operations_menu.addAction(check_input)
+        operations_menu.addAction(enumerate_sentences)
         operations_menu.addMenu(grammar_menu)
 
 if __name__ == "__main__":
