@@ -47,7 +47,7 @@ class AutomatonOperations:
     def ndfa_to_dfa(self, automaton, editor):
         NDstates = automaton.states
         Dstates = []
-        Dstates.append(State(NDstates[0].label, NDstates[0].acceptance))
+        Dstates.append(State("["+NDstates[0].label+"]", NDstates[0].acceptance))
         for j in automaton.alphabet:
             tx = [x for x in NDstates[0].transitions if x.symbol == j]
             label = ""
@@ -99,10 +99,7 @@ class AutomatonOperations:
         editor.build_table(Dstates, automaton.alphabet)
 
     def minimize(self, automaton, editor):
-        #find reachable states x
-        #find alive states x
-        #complete automaton x
-        #make them pussy ass equivalence classes
+        q0 = automaton.states[0]
         states = automaton.states
         alphabet = automaton.alphabet
         reachable_states = []
@@ -130,40 +127,66 @@ class AutomatonOperations:
         
         states = [x for x in states if x in alive_states]
 
-        self.complete_automata(states, alphabet)
-
+        print("-----------------------------------")
+        
         #algoritmo de hopcroft
-
         f = [x for x in states if x.acceptance]
         k_f = [x for x in states if not x.acceptance]
 
 
-        '''
-        Step 1 − All the states Q are divided in two partitions − final states and non-final states and are denoted by P0.
-        All the states in a partition are 0th equivalent. Take a counter k and initialize it with 0.
-        Step 2 − Increment k by 1. For each partition in Pk, divide the states in Pk into two partitions if they are k-distinguishable. 
-        Two states within this partition X and Y are k-distinguishable 
-        if there is an input S such that δ(X, S) and δ(Y, S) are (k-1)-distinguishable.
+        P = [set(f), set(k_f)]
+        W = [set(f)]
 
-        Step 3 − If Pk ≠ Pk-1, repeat Step 2, otherwise go to Step 4.
+        while W:
+            A = W[0]
+            W.remove(A)
+            X = set()
+            for c in alphabet:
+                for state in states:
+                    possible_targets = [x.target for x in state.transitions if x.symbol == c]
+                    for target in possible_targets:
+                        if target in A:
+                            X.add(target)
+                print("X:"+"".join(str(X)))
+                for Y in P:
+                    print("got here")
+                    if (X&Y) and (Y-X):
+                        P.insert(P.index(Y), X&Y)
+                        P.insert(P.index(Y)+1, Y-X)
+                        P.remove(Y)
+                        if Y in W:
+                            W.insert(W.index(Y), X&Y)
+                            W.insert(W.index(Y)+1, Y-X)
+                            W.remove(Y)
+                        else :
+                            if len(X&Y) <= len (Y-X):
+                                W.append(X&Y)
+                            else :
+                                W.append(Y-X)
+        print(P)
+        for conj in P:
+            for state in conj:
+                for t in state.transitions:
+                    print("delta("+str(state)+","+t.symbol+")="+str(t.target))
 
-        Step 4 − Combine kth equivalent sets and make them the new states of the reduced DFA.
-        '''
-        P = {frozenset(f), frozenset(k_f)}
-        Pn_1 = P
-        for Pn in P:
-            for a in alphabet:
-                if Pn == Pn_1:
-                    break
-            break
 
     '''
+    S->aA|bB|a|b
+A->bB|b
+B->aA|a
+    A->0B|1C|1
+B->0A|1D|1
+C->0E|0|1F
+D->0E|0|1F
+E->0E|0|1F
+F->0F|1F
+
     S->aA|bS|b
     A->aS|bA|a
     '''
 
     def complete_automata(self, states, alphabet):
-        phi = State("φ")
+        phi = State("Phi", False)
         alive = False
         if phi not in states:
             for a in alphabet:
@@ -172,7 +195,7 @@ class AutomatonOperations:
                 for t in s.transitions:
                     if t.target.label == "-":
                         alive = True
-                        s.replace_transition(Transition(phi, t.symbol), t)
+                        t.target = phi
             if alive:
                 states.append(phi)
 

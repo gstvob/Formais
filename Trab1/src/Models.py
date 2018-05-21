@@ -69,13 +69,12 @@ class State:
         self.acceptance = acceptance
         self.label = label
         self.transitions = []
-
     def __repr__(self):
         return self.label
-
     def set_acceptance(self, status):
         self.acceptance = status
-
+    def change_label(self, nL):
+        self.label = nL
     def insert_transitions(self, transitions):
         self.transitions=transitions
     def add_transition(self, transition):
