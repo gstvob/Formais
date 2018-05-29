@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import sys
 from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAction, qApp, QMenu)
 from Forms import *
@@ -34,11 +33,13 @@ class MainWindow(QMainWindow):
         self.show()
 
     def _create_grammar(self):
-        grammar_form = GrammarForm(self.grammars)
+        grammar_form = GrammarForm()
+        grammar_form.insert(self.grammars)
         self.setCentralWidget(grammar_form)
 
     def _create_expression(self):
-        expression_form = ExpressionForm(self.expressions)
+        expression_form = ExpressionForm()
+        expression_form.insert(self.expressions)
         self.setCentralWidget(expression_form)
 
     def _view_grammars(self):
@@ -54,44 +55,48 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(automata_view)
 
     def _edit_grammars(self):
-        grammar_edit = GrammarEditor(self.grammars)
+        grammar_edit = GrammarForm()
+        grammar_edit.update(self.grammars)
         self.setCentralWidget(grammar_edit)
 
     def _edit_expressions(self):
-        expression_edit = ExpressionEditor(self.expressions)
+        expression_edit = ExpressionForm()
+        expression_edit.update(self.expressions)
         self.setCentralWidget(expression_edit)
 
     def _convert_grammar_automaton(self):
-        conversion = ConversionEditor(1, self.grammars, self.automata)
+        conversion = GrammarOperations()
+        conversion.choose_for_conversion(self.grammars, self.automata)
         self.setCentralWidget(conversion)
 
     def _convert_automaton_grammar(self):
-        conversion = ConversionEditor(2, self.grammars, self.automata)
+        conversion = AutomatonOperations()
+        conversion.choose_for_conversion(self.automata, self.grammars)
         self.setCentralWidget(conversion)
 
     def _grammar_union(self):
-        union = ExtraOperations(self.grammars)
-        union.grammar_union()
+        union = GrammarOperations()
+        union.choose_for_op(self.grammars, 0)
         self.setCentralWidget(union)
     
     def _grammar_concat(self):
-        concat = ExtraOperations(self.grammars)
-        concat.grammar_concat()
+        concat = GrammarOperations()
+        concat.choose_for_op(self.grammars, 1)
         self.setCentralWidget(concat)
 
     def _kleene_star(self):
-        kStar = ExtraOperations(self.grammars)
-        kStar.kleene_star()
+        kStar = GrammarOperations()
+        kStar.choose_for_op(self.grammars, 2)
         self.setCentralWidget(kStar)
 
     def _check_input(self):
-        check_input = AutomataEditor(self.automata)
-        check_input.automaton_test_input()
+        check_input = AutomatonOperations()
+        check_input.automaton_test_input(self.automata)
         self.setCentralWidget(check_input)
 
     def _enumerate_sentences(self):
-        enumerate_sentences = AutomataEditor(self.automata)
-        enumerate_sentences.n_size_enumerator()
+        enumerate_sentences = AutomatonOperations()
+        enumerate_sentences.enumerate_nsize_inputs(self.automata)
         self.setCentralWidget(enumerate_sentences)
 
     def set_newMenu(self, new_menu):
@@ -124,7 +129,7 @@ class MainWindow(QMainWindow):
         list_automata = QAction("&List Automata", self)
         list_automata.setStatusTip("View all saved automata")
         list_automata.triggered.connect(self._view_automata)
-        #operações para listar expressões regulares.
+
         list_menu.addAction(list_regularG)
         list_menu.addAction(list_regularE)
         list_menu.addAction(list_automata)
