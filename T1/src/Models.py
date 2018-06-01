@@ -376,13 +376,28 @@ class Automaton:
 		t3 = t1+t2
 		new_start.insert_transitions(t3)
 		new_states = []
+		new_states.append(new_start)
 		new_states += self.states
 		new_states += automaton.states
 
 		automaton = Automaton(new_states, self.alphabet+automaton.alphabet)
-		automaton.prettify()
 		return automaton
 
+	def complement(self):
+		new_states = [State(x.label, not x.acceptance) for x in self.states]
+		for s in new_states:
+			new_states.insert_transitions(next(x.transitions for x in self.states if s.label == x.label))
+		new_automaton = Automaton(new_states, self.alphabet)
+		return new_automaton
+
+	def intersection(self, automaton):
+		#A & B = NOT(NOT(A) U NOT(B))
+		nota = self.complement()
+		notb = automaton.complement()
+		notaunotb = nota.union(notb)
+		intersect = notaunotb.complement()
+		#thas the shit right ther.
+		return intersect
 	def remove_dead_states(self):
 		alive_states = []
 		alive_states_before = 0

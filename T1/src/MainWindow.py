@@ -101,12 +101,21 @@ class MainWindow(QMainWindow):
 
     def _language_union(self, op):
         if not op:
-            #faz a operação com gramática.
+            #União definida pela gramática.
+            return False
         else:
-            #faz a operação com autômato.
             union = AutomatonOperations()
-            union.automaton_for_union(self.automata)
+            union.automata_for_binary_op(self.automata, 0)
             self.setCentralWidget(union)
+
+    def _language_complement(self, op):
+        if not op :
+            #complemento definido pela gramática
+            return False
+        else:
+            complement = AutomatonOperations()
+            complement.automata_for_unary_op(self.automata, 3)
+            self.setCentralWidget(complement)
 
     def set_newMenu(self, new_menu):
 
@@ -184,7 +193,7 @@ class MainWindow(QMainWindow):
 
         language_menu = QMenu("&Linguagem Regular", self)
         language_union = QMenu("&União", self)
-        language_complement = QMenu("&Complemento")
+        language_complement = QMenu("&Complemento", self)
         language_intersection = QMenu("&Intersecção", self)
         language_diff = QMenu("&Diferença", self)
         language_reverse = QMenu("&Reverso", self)
@@ -201,7 +210,9 @@ class MainWindow(QMainWindow):
 
         complement_lr_defined_grammar = QAction("Por gramática", self)
         complement_lr_by_af = QAction("Por autômato", self)
-        
+        complement_lr_defined_grammar.triggered.connect(lambda d: self._language_complement(0))
+        complement_lr_by_af.triggered.connect(lambda d: self._language_complement(1))
+
         intersection_lr_defined_grammar = QAction("Por gramática", self)
         intersection_lr_by_af = QAction("Por autômato", self)
 
@@ -217,8 +228,8 @@ class MainWindow(QMainWindow):
         language_complement.addAction(complement_lr_by_af)
         language_intersection.addAction(intersection_lr_defined_grammar)
         language_intersection.addAction(intersection_lr_by_af)
-        language_diff.addAction(diff_le_defined_grammar)
-        language_diff.addAction(diff_le_by_af)
+        language_diff.addAction(diff_lr_defined_grammar)
+        language_diff.addAction(diff_lr_by_af)
         language_reverse.addAction(reverse_lr_defined_grammar)
         language_reverse.addAction(reverse_lr_by_af)
 

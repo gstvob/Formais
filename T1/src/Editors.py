@@ -205,17 +205,75 @@ class AutomatonOperations(QWidget):
 		self.setLayout(grid)
 		self.show()
 
-	def automaton_for_union(self, automata):
-		grid = QGridLayout(self)
-		choose_automaton = QComboBox(self)
+
+	def automata_for_binary_op(self, automata, op):
+		grid = QGridLayout()
+		choose_automaton1 = QComboBox(self)
+		choose_automaton2 = QComboBox(self)
 		for i in automata:
 			if not i.non_deterministic:
-				choose_automaton.addItem(i.name)
+				choose_automaton1.addItem(i.name)
+				choose_automaton2.addItem(i.name)
 
-		choose_automaton.activated[str].connect(lambda d: self._input(choose_automaton.currentText(), automata))
-		grid.addWidget(choose_automaton, 0, 0)
+		choose_automaton1.activated[str].connect(lambda d: self._show_af_table(choose_automaton1.currentText(), automata, 0))
+		choose_automaton2.activated[str].connect(lambda d: self._show_af_table(choose_automaton2.currentText(), automata, 1))
+		grid.addWidget(choose_automaton1, 0, 0)		
+		grid.addWidget(choose_automaton2, 0, 1)
+		button = None
+		if op == 0:
+			button = QPushButton("Unir")
+			button.clicked.connect(lambda d: self.operate(choose_automaton1.currentText(), choose_automaton2.currentText(), automata, 0))
+		elif op ==1 :
+			button = QPushButton("Interseccionar")
+			button.clicked.connect(lambda d: self.operate(choose_automaton1.currentText(), choose_automaton2.currentText(), automata, 1))
+		else :
+			button = QPushButton("Diferença")
+			button.clicked.connect(lambda d: self.operate(choose_automaton1.currentText(), choose_automaton2.currentText(), automata, 2))
+		
+		grid.addWidget(button,2,0)
 		self.setLayout(grid)
 		self.show()
+
+	def automata_for_unary_op(self, automata, op):
+		grid = QGridLayout()
+		choose_automaton1 = QComboBox(self)
+		for i in automata:
+			if not i.non_deterministic:
+				choose_automaton1.addItem(i.name)
+
+		choose_automaton1.activated[str].connect(lambda d: self._show_af_table(choose_automaton1.currentText(), automata, 0))
+		grid.addWidget(choose_automaton1, 0, 0)		
+		button = None
+		if op == 3:
+			button = QPushButton("Complemento")
+			button.clicked.connect(lambda d: self.operate(choose_automaton1.currentText(), "",automata, 3))
+		else:
+			button = QPushButton("Reverso")
+			button.clicked.connect(lambda d: self.operate(choose_automaton1.currentText(), "", automata, 4))
+		
+		grid.addWidget(button,2,0)
+		self.setLayout(grid)
+		self.show()
+
+	def _show_af_table(self, a_name, automata, column):
+		automaton = next(x for x in automata if a_name == x.name)
+		self.build_table(automaton, column=column)
+
+	def operate(self, a_name1, a_name2, automata, op):
+		if a_name1!="" and a_name2!="":
+			if op == 0:
+				automaton1 = next(x for x in automata if x.name == a_name1)
+				automaton2 = next(x for x in automata if x.name == a_name2)
+				union = automaton1.union(automaton2)
+				save_button = QPushButton("Salvar")
+				save_button.clicked.connect(lambda d: self.save_automaton(union, automata))
+				self.build_table(union, 3, 0)
+				self.layout().addWidget(save_button, 3, 1)
+		elif a_name1!="":
+			if op == 3:
+				automaton = next(x for x in automata if x.name == a_name1)
+				complement = automaton.complement()
+				self.build_table(complement)
 
 	def determinize(self, automaton):
 		dfa_automaton = automaton.ndfa_to_dfa()
@@ -254,7 +312,6 @@ class AutomatonOperations(QWidget):
 
 		self.layout().addWidget(size, 2, 0)
 		self.layout().addWidget(button,3, 0)
-
 
 	def _enumerate(self, size, automaton):
 		result = QTextEdit()
@@ -312,7 +369,20 @@ class AutomatonOperations(QWidget):
 		convert_to_grammar.clicked.connect(lambda d: self.convert(automaton, grammars))
 		self.layout().addWidget(convert_to_grammar, 2, 1)
 
-	def build_table(self, automaton):
+	def save_automaton(self, automaton, automata):
+		saved = False
+
+		while not saved:			
+			name, ok = QInputDialog().getText(self,"Input Dialog", "Nomeie este autômato")
+			if ok:
+				if not any(x.name == name for x in automata) and name != "":			
+					automaton.set_name(name)
+					automata.append(automaton)
+					saved = True
+			else:
+				break
+
+	def build_table(self, automaton,row = 1, column=1):
 		states = automaton.states
 		alphabet = automaton.alphabet
 		table_representation = QTableWidget()
@@ -345,12 +415,11 @@ class AutomatonOperations(QWidget):
 				table_representation.setItem(i, j, newItem)
 			i+=1
 
-		self.layout().addWidget(table_representation, 1, 1)
+		self.layout().addWidget(table_representation, row, column)
 
 	def convert(self, automaton, grammars):
 		grammar = automaton.convert()
 		self.print_grammar(grammar, grammars)
-
 
 	def print_grammar(self, grammar, grammars):
 		productions = QTextEdit()
