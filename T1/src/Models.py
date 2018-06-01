@@ -205,10 +205,13 @@ class Automaton:
 		self.states = states
 		self.alphabet = alphabet
 		self.q0 = states[0]
+		self.minimized = False
 		self._set_finals()
 		self.dfa_or_ndfa()
 	def set_name(self, name):
 		self.name = name
+	def set_minimized(self):
+		self.minimized = not self.minimized
 	def _set_finals(self):
 		self.f = [x for x in self.states if x.acceptance == True]
 	def dfa_or_ndfa(self):
@@ -334,9 +337,6 @@ class Automaton:
 			if alive:
 				self.states.append(phi)
 
-	#Cria um automato com uma cópia de estados de m1 em m2
-	#inverte as transições
-	#copia as transições dos estados finais antigos para o estado inicial novo
 	def reverse(self):
 		start_final = self.q0.acceptance
 		new_q = State("q0'", start_final)
@@ -369,6 +369,20 @@ class Automaton:
 		self.prettify(new_states)
 		return Automaton(new_states, self.alphabet)
 
+	def union(self, automaton):
+		new_start = State("q0'", (self.q0.acceptance or automaton.q0.acceptance))
+		t1 = self.q0.transitions
+		t2 = automaton.q0.transitions
+		t3 = t1+t2
+		new_start.insert_transitions(t3)
+		new_states = []
+		new_states += self.states
+		new_states += automaton.states
+
+		automaton = Automaton(new_states, self.alphabet+automaton.alphabet)
+		automaton.prettify()
+		return automaton
+
 	def remove_dead_states(self):
 		alive_states = []
 		alive_states_before = 0
@@ -391,7 +405,6 @@ class Automaton:
 			for t in s.transitions:
 				if t.target.label not in [x.label for x in self.states]:
 					s.replace_transition(Transition(State("-"), t.symbol), t)
-
 
 	def remove_unreachable_states(self):
 		new_states = self.states
@@ -417,24 +430,27 @@ class Automaton:
 					hit = True
 					if s.acceptance:
 						x.set_acceptance(True)
+					for k in self.states:
+						for t in k.transitions:
+							if t.target.label == s.label:
+								k.replace_transition(Transition(x, t.symbol), t)
 			if not hit:
 				if s not in new_states:
 					new_states.append(s)		
 		self.states = new_states
-    '''
-    S->aA|bB|a|b
-    A->bB|b
-    B->aA|a
-        A->0B|1C|1
-    B->0A|1D|1
-    C->0E|0|1F
-    D->0E|0|1F
-    E->0E|0|1F
-    F->0F|1F
+	'''
+	S->aS|a|b|bB
+	B->bB|b
+	A->0B|1C|1
+	B->0A|1D|1
+	C->0E|0|1F
+	D->0E|0|1F
+	E->0E|0|1F
+	F->0F|1F
 
-    S->aA|bS|b
-    A->aS|bA|a
-    '''
+	S->aA|bS|b
+	A->aS|bA|a
+	'''
 	def prettify(self, states):
 		for s in states:
 			while True:

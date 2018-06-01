@@ -102,19 +102,13 @@ class GrammarOperations(QWidget):
 		self.build_table(automaton, automata)
 
 	def determinize(self, automaton, automata):
-		dfa_automaton = automaton.ndfa_to_dfa()
-		print(automaton.name)
+		det = AutomatonOperations() 
+		dfa_automaton = det.determinize(automaton)
 		self.build_table(dfa_automaton, automata)
 
 	def minimize(self, automaton, automata):
-		automaton.remove_dead_states()
-		reversed_automaton = automaton.reverse()
-		determinize_reverse = reversed_automaton.ndfa_to_dfa()
-		determinize_reverse.remove_unreachable_states()
-		reverse_determinize_reverse = determinize_reverse.reverse()
-		minimal = reverse_determinize_reverse.ndfa_to_dfa()
-		minimal.remove_unreachable_states()
-		minimal.merge_equal_states()
+		mini = AutomatonOperations()
+		minimal = mini.minimize(automaton)
 		self.build_table(minimal, automata)
 
 	def build_table(self, automaton, automata):
@@ -210,6 +204,33 @@ class AutomatonOperations(QWidget):
 		grid.addWidget(choose_automaton, 0, 0)
 		self.setLayout(grid)
 		self.show()
+
+	def automaton_for_union(self, automata):
+		grid = QGridLayout(self)
+		choose_automaton = QComboBox(self)
+		for i in automata:
+			if not i.non_deterministic:
+				choose_automaton.addItem(i.name)
+
+		choose_automaton.activated[str].connect(lambda d: self._input(choose_automaton.currentText(), automata))
+		grid.addWidget(choose_automaton, 0, 0)
+		self.setLayout(grid)
+		self.show()
+
+	def determinize(self, automaton):
+		dfa_automaton = automaton.ndfa_to_dfa()
+		return dfa_automaton
+
+	def minimize(self, automaton):
+		automaton.remove_dead_states()
+		reversed_automaton = automaton.reverse()
+		determinize_reverse = reversed_automaton.ndfa_to_dfa()
+		determinize_reverse.remove_unreachable_states()
+		reverse_determinize_reverse = determinize_reverse.reverse()
+		minimal = reverse_determinize_reverse.ndfa_to_dfa()
+		minimal.remove_unreachable_states()
+		minimal.merge_equal_states()
+		return minimal
 
 	def enumerate_nsize_inputs(self, automata):
 		grid = QGridLayout(self)

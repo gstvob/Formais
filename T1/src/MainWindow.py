@@ -99,6 +99,15 @@ class MainWindow(QMainWindow):
         enumerate_sentences.enumerate_nsize_inputs(self.automata)
         self.setCentralWidget(enumerate_sentences)
 
+    def _language_union(self, op):
+        if not op:
+            #faz a operação com gramática.
+        else:
+            #faz a operação com autômato.
+            union = AutomatonOperations()
+            union.automaton_for_union(self.automata)
+            self.setCentralWidget(union)
+
     def set_newMenu(self, new_menu):
 
         new_regularG = QAction("&Regular Grammar", self)
@@ -159,31 +168,71 @@ class MainWindow(QMainWindow):
         conversion_menu.addAction(automaton_grammar)
 
     def set_operations_menu(self, operations_menu):
-        grammar_menu = QMenu("&Grammar", self)
-        union_operation = QAction("Union", self)
-        union_operation.setStatusTip("Union between two grammars")
+        grammar_menu = QMenu("&Gramática", self)
+        union_operation = QAction("União", self)
+        union_operation.setStatusTip("União entre duas gramáticas regulares")
         union_operation.triggered.connect(self._grammar_union)
-        concat_operation = QAction("Concat", self)
-        concat_operation.setStatusTip("Concatenation between two grammars")
+        concat_operation = QAction("Concatenar", self)
+        concat_operation.setStatusTip("Concatenação entre duas gramáticas")
         concat_operation.triggered.connect(self._grammar_concat)
         kleene_star_op = QAction("Kleene Star", self)
-        kleene_star_op.setStatusTip("The kleene star of a grammar")
+        kleene_star_op.setStatusTip("Operação estrela em uma gramática regular")
         kleene_star_op.triggered.connect(self._kleene_star)
         grammar_menu.addAction(union_operation)
         grammar_menu.addAction(concat_operation)
         grammar_menu.addAction(kleene_star_op)
 
-        check_input = QAction("Recognize Input", self)
-        check_input.setStatusTip("Check if automaton recognizes given input")
+        language_menu = QMenu("&Linguagem Regular", self)
+        language_union = QMenu("&União", self)
+        language_complement = QMenu("&Complemento")
+        language_intersection = QMenu("&Intersecção", self)
+        language_diff = QMenu("&Diferença", self)
+        language_reverse = QMenu("&Reverso", self)
+        language_menu.addMenu(language_union)
+        language_menu.addMenu(language_complement)
+        language_menu.addMenu(language_intersection)
+        language_menu.addMenu(language_diff)
+        language_menu.addMenu(language_reverse)
+
+        union_lr_defined_grammar = QAction("Por gramática",self)
+        union_lr_by_af = QAction("Por autômato", self)
+        union_lr_defined_grammar.triggered.connect(lambda d: self._language_union(0))
+        union_lr_by_af.triggered.connect(lambda d: self._language_union(1))
+
+        complement_lr_defined_grammar = QAction("Por gramática", self)
+        complement_lr_by_af = QAction("Por autômato", self)
+        
+        intersection_lr_defined_grammar = QAction("Por gramática", self)
+        intersection_lr_by_af = QAction("Por autômato", self)
+
+        diff_lr_defined_grammar = QAction("Por gramática", self)
+        diff_lr_by_af = QAction("Por autômato", self)
+
+        reverse_lr_defined_grammar = QAction("Por gramática",self)
+        reverse_lr_by_af = QAction("Por autômato",self)
+
+        language_union.addAction(union_lr_defined_grammar)
+        language_union.addAction(union_lr_by_af)
+        language_complement.addAction(complement_lr_defined_grammar)
+        language_complement.addAction(complement_lr_by_af)
+        language_intersection.addAction(intersection_lr_defined_grammar)
+        language_intersection.addAction(intersection_lr_by_af)
+        language_diff.addAction(diff_le_defined_grammar)
+        language_diff.addAction(diff_le_by_af)
+        language_reverse.addAction(reverse_lr_defined_grammar)
+        language_reverse.addAction(reverse_lr_by_af)
+
+        check_input = QAction("Reconhecer entrada", self)
+        check_input.setStatusTip("Checa se uma entrada é aceita pelo autômato")
         check_input.triggered.connect(self._check_input)
-        enumerate_sentences = QAction("Enumerate Sentences", self)
-        enumerate_sentences.setStatusTip("Enumerate the sentences of given size n")
+        enumerate_sentences = QAction("Enumerar Sentenças", self)
+        enumerate_sentences.setStatusTip("Enumera as sentenças de um dado tamanho n")
         enumerate_sentences.triggered.connect(self._enumerate_sentences)
 
         operations_menu.addAction(check_input)
         operations_menu.addAction(enumerate_sentences)
         operations_menu.addMenu(grammar_menu)
-
+        operations_menu.addMenu(language_menu)
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
