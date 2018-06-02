@@ -171,22 +171,44 @@ class GrammarOperations(QWidget):
 		self.layout().addWidget(save,3,1)
 
 	def operate_lr(self, name1, name2, grammars,automata, op):
+		aop = AutomatonOperations()
 		if not op:
 			grammar1 = next(x for x in grammars if x.name == name1)
 			grammar2 = next(x for x in grammars if x.name == name2)
 			automaton1 = grammar1.convert()
 			automaton2 = grammar2.convert()
-			automaton1 = automaton1.ndfa_to_dfa()
-			automaton2 = automaton2.ndfa_to_dfa()
+			automaton1 = automaton1.ndfa_to_dfa() if automaton1.non_deterministic else automaton1
+			automaton2 = automaton2.ndfa_to_dfa() if automaton2.non_deterministic else automaton2
+
+			automaton1 = aop.minimize(automaton1)
+			automaton2 = aop.minimize(automaton2)
 			union = automaton1.union(automaton2)
 			self.show_automaton(union, 3, 0)
 			save = QPushButton("Salvar", self)
 			save.clicked.connect(lambda d: self.save_automata(automata, union))
 			self.layout().addWidget(save, 3, 1)
+		elif op:
+			grammar1 = next(x for x in grammars if x.name == name1)
+			grammar2 = next(x for x in grammars if x.name == name2)
+			automaton1 = grammar1.convert()
+			automaton2 = grammar2.convert()
+			automaton1 = automaton1.ndfa_to_dfa() if automaton1.non_deterministic else automaton1
+			automaton2 = automaton2.ndfa_to_dfa() if automaton2.non_deterministic else automaton2
+			automaton1 = aop.minimize(automaton1)
+			automaton2 = aop.minimize(automaton2)
+			intersect = automaton1.intersection(automaton2)
+			row = 3
+			for automaton in intersect:
+				self.show_automaton(automaton, row, 0)
+				save = QPushButton("Salvar", self)
+				save.clicked.connect(lambda d: self.save_automata(automata, automaton))
+				self.layout().addWidget(save, row, 1)
+				row+=1
 		elif op == 3:
 			grammar1 = next(x for x in grammars if x.name == name1)
 			automaton1 = grammar1.convert()
-			automaton1 = automaton1.ndfa_to_dfa()
+			if automaton1.non_deterministic:
+				automaton1 = automaton1.ndfa_to_dfa()
 			automaton1.complete_automata()
 			complement = automaton1.complement()
 			self.show_automaton(complement, 2, 0)
@@ -196,7 +218,8 @@ class GrammarOperations(QWidget):
 		elif op == 4:
 			grammar1 = next(x for x in grammars if x.name == name1)
 			automaton1 = grammar1.convert()
-			automaton1 = automaton1.ndfa_to_dfa()
+			if automaton1.non_deterministic:
+				automaton1 = automaton1.ndfa_to_dfa()
 			automaton1.complete_automata()
 			reverse = automaton1.reverse()
 			self.show_automaton(reverse, 2, 0)
@@ -330,6 +353,7 @@ class GrammarOperations(QWidget):
 			i+=1
 		self.layout().addWidget(table_representation, row, column)
 
+
 class AutomatonOperations(QWidget):
 	def __init__(self):
 		super().__init__()
@@ -405,11 +429,29 @@ class AutomatonOperations(QWidget):
 			if op == 0:
 				automaton1 = next(x for x in automata if x.name == a_name1)
 				automaton2 = next(x for x in automata if x.name == a_name2)
+				automaton1 = automaton1.ndfa_to_dfa() if automaton1.non_deterministic else automaton1
+				automaton2 = automaton2.ndfa_to_dfa() if automaton2.non_deterministic else automaton2
+				automaton1 = self.minimize(automaton1)
+				automaton2 = self.minimize(automaton2)
 				union = automaton1.union(automaton2)
 				save_button = QPushButton("Salvar")
 				save_button.clicked.connect(lambda d: self.save_automaton(union, automata))
 				self.build_table(union, 3, 0)
 				self.layout().addWidget(save_button, 3, 1)
+			elif op:
+				automaton1 = next(x for x in automata if x.name == a_name1)
+				automaton2 = next(x for x in automata if x.name == a_name2)
+				automaton1 = automaton1.ndfa_to_dfa() if automaton1.non_deterministic else automaton1
+				automaton2 = automaton2.ndfa_to_dfa() if automaton2.non_deterministic else automaton2
+				automaton1 = self.minimize(automaton1)
+				automaton2 = self.minimize(automaton2)
+				intersect = automaton1.intersection(automaton2)
+				row = 3
+				for automaton in intersect:			
+					self.build_table(automaton, row, 0)
+					save_button = QPushButton("Salvar")
+					save_button.clicked.connect(lambda d: self.save_automaton(automaton, automata))
+					self.layout().addWidget(save_button, row, 1)
 		elif a_name1!="":
 			if op == 3:
 				automaton = next(x for x in automata if x.name == a_name1)
@@ -425,14 +467,7 @@ class AutomatonOperations(QWidget):
 		return dfa_automaton
 
 	def minimize(self, automaton):
-		automaton.remove_dead_states()
-		reversed_automaton = automaton.reverse()
-		determinize_reverse = reversed_automaton.ndfa_to_dfa()
-		determinize_reverse.remove_unreachable_states()
-		reverse_determinize_reverse = determinize_reverse.reverse()
-		minimal = reverse_determinize_reverse.ndfa_to_dfa()
-		minimal.remove_unreachable_states()
-		minimal.merge_equal_states()
+		minimal = automaton.minimize()
 		return minimal
 
 	def enumerate_nsize_inputs(self, automata):

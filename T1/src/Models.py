@@ -320,6 +320,7 @@ class Automaton:
 					label = ""
 					acceptance = False
 					for k in state:
+						print(k)
 						nd = next(x for x in NDstates if x.label == k)
 						tx += [x for x in nd.transitions if x.symbol == i]
 					for l in tx:
@@ -341,6 +342,18 @@ class Automaton:
 							Dstates.append(new_state)
 						d.add_transition(Transition(new_state, i))
 		return Automaton(Dstates, self.alphabet)
+
+
+	def minimize(self):
+		a1 = self.reverse()
+		a2 = a1.ndfa_to_dfa() if a1.non_deterministic else a1
+		a2.remove_unreachable_states()
+		a2 = a2.reverse()
+		a3 = a2.ndfa_to_dfa() if a2.non_deterministic else a2
+		a3.merge_equal_states()
+		a3.remove_unreachable_states()
+		a3.remove_dead_states()
+		return a3
 
 	def convert(self):
 		vn = [x.label for x in self.states]
@@ -449,6 +462,7 @@ class Automaton:
 		return automaton
 
 	def complement(self):
+		self.complete_automata()
 		new_states = [State(x.label, not x.acceptance) for x in self.states]
 		for s in new_states:
 			s.insert_transitions(next(x.transitions for x in self.states if s.label == x.label))
@@ -456,13 +470,22 @@ class Automaton:
 		return new_automaton
 
 	def intersection(self, automaton):
-		nota.complete_automata()
-		notb.complete_automata()
 		nota = self.complement()
 		notb = automaton.complement()
 		notaunotb = nota.union(notb)
-		det_notaunotb = notaunotb.ndfa_to_dfa()
-		intersect = det_notaunotb.complement()
+		notaunotb.fix_transitions()
+		notaunotb.prettify(notaunotb.states)
+		print("".join(str(notaunotb.states)))
+		det_notaunotb = notaunotb.ndfa_to_dfa() if notaunotb.non_deterministic else notaunotb
+		mini = det_notaunotb.minimize()
+		final = det_notaunotb.complement()
+		det_notaunotb = notaunotb
+		final = notaunotb
+		intersect = []
+		intersect.append(nota)
+		intersect.append(notb)
+		intersect.append(det_notaunotb)
+		intersect.append(final)
 		return intersect
 
 	def remove_dead_states(self):
@@ -482,11 +505,14 @@ class Automaton:
 				break
         
 		self.states = [x for x in self.states if x in alive_states]
-
-		for s in self.states:
-			for t in s.transitions:
-				if t.target.label not in [x.label for x in self.states]:
-					s.replace_transition(Transition(State("-"), t.symbol), t)
+		
+		if not self.states:
+			self.states = State("VAZIO")
+		else:		
+			for s in self.states:
+				for t in s.transitions:
+					if t.target.label not in [x.label for x in self.states]:
+						s.replace_transition(Transition(State("-"), t.symbol), t)
 
 	def remove_unreachable_states(self):
 		new_states = self.states
@@ -540,6 +566,12 @@ class Automaton:
 				if new_label not in [x.label for x in states]:
 					s.change_label(new_label)
 					break
+	
+	def fix_transitions(self):
+		for c in self.alphabet:
+			for s in self.states:
+				if c not in (t.symbol for t in s.transitions):
+					s.add_transition(Transition(State("-"), c))			
 
 class State:
     def __init__(self, label, acceptance=False):

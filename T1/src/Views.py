@@ -1,6 +1,6 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout, QTableWidget, QTableWidgetItem
-
+from Editors import *
 
 '''
 
@@ -56,12 +56,23 @@ class AutomatonView(View):
 	def __init__(self, automata):
 		super().__init__(automata)
 
-	def _view(self, name):
-		automaton = next(x for x in self.list if x.name == name)
+	def _view(self, name="", automaton=None):
+		if automaton==None:
+			automaton = next(x for x in self.list if x.name == name)
 		table_representation = QTableWidget()
 		table_representation.setColumnCount(len(automaton.alphabet))
 		table_representation.setRowCount(len(automaton.states))
-		states_labels = [x.label for x in automaton.states]
+		states_labels = []
+
+		for x in automaton.states:
+			label = ""
+			if x.acceptance:
+				label+= "*"
+			if x == automaton.states[0]:
+				label += "->"
+			label += x.label
+			states_labels.append(label)
+
 		table_representation.setVerticalHeaderLabels(states_labels)
 		table_representation.setHorizontalHeaderLabels(automaton.alphabet)
 		i = 0
@@ -78,3 +89,45 @@ class AutomatonView(View):
 				table_representation.setItem(i, j, newItem)
 			i+=1
 		self.grid.addWidget(table_representation, 1, 0)
+		
+		save_automaton = QPushButton("Salvar Autômato")
+		determinize = QPushButton("Determinizar")
+		minimize = QPushButton("Minimizar")
+		save_automaton.clicked.connect(lambda d: self.save_automaton(self.list, automaton))
+		determinize.clicked.connect(lambda d: self.determinize(self.list, automaton))
+		minimize.clicked.connect(lambda d: self.minimize(self.list, automaton))
+		if automaton.non_deterministic:
+			self.grid.addWidget(determinize, 2,0)
+		else:
+			self.grid.addWidget(minimize, 2, 0)
+		self.grid.addWidget(save_automaton, 3,0)
+
+
+	def determinize(self, automata, automaton):
+		automatonOperations = AutomatonOperations()
+		det = automatonOperations.determinize(automaton)
+		self._view(automaton=det)
+	def minimize(self, automata, automaton):
+		automatonOperations = AutomatonOperations()
+		mini = automatonOperations.minimize(automaton)
+		self._view(automaton=mini)
+	def save_automaton(self, automata, automaton):
+		saved = False
+		while not saved:			
+			name, ok = QInputDialog().getText(self,"Input Dialog", "Nomeie este autômato")
+			if ok:
+				if not any(x.name == name for x in automata) and name != "":			
+					automaton.set_name(name)
+					automata.append(automaton)
+					saved = True
+			else:
+				break
+
+			if saved==True:
+				self.update_combobox(automata)
+	def update_combobox(self, automata):
+		self.choose = QComboBox(self)
+		for i in automata:
+			self.choose.addItem(i.name)
+		self.choose.activated[str].connect(self._view)
+		self.grid.addWidget(self.choose,0,0)

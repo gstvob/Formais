@@ -125,6 +125,16 @@ class MainWindow(QMainWindow):
             union.automata_for_binary_op(self.automata, 0)
         self.setCentralWidget(union)
 
+    def _language_intersect(self, op):
+        intersect = None
+        if not op:
+            intersect = GrammarOperations()
+            intersect.lr_binary_grammar(self.grammars, self.automata, 1)
+        else:
+            intersect = AutomatonOperations()
+            intersect.automata_for_binary_op(self.automata, 1)
+        self.setCentralWidget(intersect)
+
     def _language_complement(self, op):
         complement = None
         if not op :
@@ -243,12 +253,16 @@ class MainWindow(QMainWindow):
 
         intersection_lr_defined_grammar = QAction("Por gramática", self)
         intersection_lr_by_af = QAction("Por autômato", self)
+        intersection_lr_defined_grammar.triggered.connect(lambda d: self._language_intersect(0))
+        intersection_lr_by_af.triggered.connect(lambda d: self._language_intersect(1))
 
         diff_lr_defined_grammar = QAction("Por gramática", self)
         diff_lr_by_af = QAction("Por autômato", self)
 
         reverse_lr_defined_grammar = QAction("Por gramática",self)
         reverse_lr_by_af = QAction("Por autômato",self)
+        reverse_lr_defined_grammar.triggered.connect(lambda d: self._language_reverse(0))
+        reverse_lr_by_af.triggered.connect(lambda d: self._language_reverse(1))
 
         language_union.addAction(union_lr_defined_grammar)
         language_union.addAction(union_lr_by_af)
