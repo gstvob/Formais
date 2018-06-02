@@ -2,13 +2,28 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QComboBox, QPushButton, QTextEdit, QGridLayout, QLineEdit, QTableWidget, QTableWidgetItem, QInputDialog
 from Models import *
 
+
+'''
+
+AUTOR : GUSTAVO BORGES FRANÇA
+
+'''
+
+
+'''
+	Essa classes fazem a "ponte" entre
+	a lógica que se encontra nos modelos e a interface visual.
+	é por aqui que são feitas as ações que o usuário escolhe
+	usando de todos os métodos criados na parte dos modelos.
+'''
+
 class GrammarOperations(QWidget):
 
 	def __init__(self):
 		super().__init__()
 
 	def choose_for_conversion(self, grammars, automata):
-		grid = QGridLayout()
+		grid = QGridLayout(self)
 		choose = QComboBox(self)
 		for i in grammars:
 			choose.addItem(i.name)
@@ -18,7 +33,7 @@ class GrammarOperations(QWidget):
 		self.show()
 
 	def choose_for_op(self, grammars, op):
-		grid = QGridLayout()
+		grid = QGridLayout(self)
 		choose_grammar1 = QComboBox(self)
 		g1 = QTextEdit()
 		g1.setReadOnly(True)
@@ -51,6 +66,64 @@ class GrammarOperations(QWidget):
 		else :
 			button = QPushButton("Realizar Fecho")
 			button.clicked.connect(lambda d: self.operate(choose_grammar1.currentText(), "", grammars, 2))
+		
+		grid.addWidget(button,2,0)
+		self.setLayout(grid)
+		self.show()
+
+	def lr_unary_grammar(self, grammars, automata, op):
+		grid = QGridLayout(self)
+		choose_grammar1 = QComboBox(self)
+		g1 = QTextEdit()
+		g1.setReadOnly(True)
+		for i in grammars:
+			choose_grammar1.addItem(i.name)
+
+		choose_grammar1.activated[str].connect(lambda d: self._change_text(choose_grammar1.currentText(), g1, grammars))
+		grid.addWidget(choose_grammar1, 0, 0)
+		grid.addWidget(g1, 1, 0)
+
+		button = None
+		if op == 3:
+			button = QPushButton("Complemento")
+			button.clicked.connect(lambda d: self.operate_lr(choose_grammar1.currentText(),"",  grammars, automata, 3))
+		else :
+			button = QPushButton("Reverso")
+			button.clicked.connect(lambda d: self.operate_lr(choose_grammar1.currentText(),"", grammars, automata, 4))
+		
+		grid.addWidget(button,2,0)
+		self.setLayout(grid)
+		self.show()
+	def lr_binary_grammar(self, grammars, automata, op):
+		grid = QGridLayout(self)
+		choose_grammar1 = QComboBox(self)
+		choose_grammar2 = QComboBox(self)
+		g1 = QTextEdit()
+		g1.setReadOnly(True)
+		g2 = QTextEdit()
+		g2.setReadOnly(True)
+
+		for i in grammars:
+			choose_grammar1.addItem(i.name)
+			choose_grammar2.addItem(i.name)
+
+		choose_grammar1.activated[str].connect(lambda d: self._change_text(choose_grammar1.currentText(), g1, grammars))
+		choose_grammar2.activated[str].connect(lambda d: self._change_text(choose_grammar2.currentText(), g2, grammars))
+		grid.addWidget(choose_grammar1, 0, 0)
+		grid.addWidget(choose_grammar2, 0 ,1)
+		grid.addWidget(g1, 1, 0)
+		grid.addWidget(g2, 1, 1)
+			
+		button = None
+		if op == 0:
+			button = QPushButton("União")
+			button.clicked.connect(lambda d: self.operate_lr(choose_grammar1.currentText(), choose_grammar2.currentText(), grammars, automata, 0))
+		elif op ==1 :
+			button = QPushButton("Interseccionar")
+			button.clicked.connect(lambda d: self.operate_lr(choose_grammar1.currentText(), choose_grammar2.currentText(), grammars, automata, 1))
+		else :
+			button = QPushButton("Diferença")
+			button.clicked.connect(lambda d: self.operate_lr(choose_grammar1.currentText(), choose_grammar2.currentText(), grammars, automata, 2))
 		
 		grid.addWidget(button,2,0)
 		self.setLayout(grid)
@@ -96,6 +169,41 @@ class GrammarOperations(QWidget):
 			result.textCursor().insertText("A intersecção dos não terminais das gramáticas deve ser vazia")
 		self.layout().addWidget(result,3,0)
 		self.layout().addWidget(save,3,1)
+
+	def operate_lr(self, name1, name2, grammars,automata, op):
+		if not op:
+			grammar1 = next(x for x in grammars if x.name == name1)
+			grammar2 = next(x for x in grammars if x.name == name2)
+			automaton1 = grammar1.convert()
+			automaton2 = grammar2.convert()
+			automaton1 = automaton1.ndfa_to_dfa()
+			automaton2 = automaton2.ndfa_to_dfa()
+			union = automaton1.union(automaton2)
+			self.show_automaton(union, 3, 0)
+			save = QPushButton("Salvar", self)
+			save.clicked.connect(lambda d: self.save_automata(automata, union))
+			self.layout().addWidget(save, 3, 1)
+		elif op == 3:
+			grammar1 = next(x for x in grammars if x.name == name1)
+			automaton1 = grammar1.convert()
+			automaton1 = automaton1.ndfa_to_dfa()
+			automaton1.complete_automata()
+			complement = automaton1.complement()
+			self.show_automaton(complement, 2, 0)
+			save = QPushButton("Salvar", self)
+			save.clicked.connect(lambda d: self.save_automata(automata, complement))
+			self.layout().addWidget(save, 2, 1)
+		elif op == 4:
+			grammar1 = next(x for x in grammars if x.name == name1)
+			automaton1 = grammar1.convert()
+			automaton1 = automaton1.ndfa_to_dfa()
+			automaton1.complete_automata()
+			reverse = automaton1.reverse()
+			self.show_automaton(reverse, 2, 0)
+			save = QPushButton("Salvar", self)
+			save.clicked.connect(lambda d: self.save_automata(automata, reverse))
+			self.layout().addWidget(save, 2, 1)
+
 
 	def apply_conversion(self, grammar, automata):
 		automaton = grammar.convert()
@@ -187,7 +295,40 @@ class GrammarOperations(QWidget):
 		p = next(x.p for x in grammars if combobox_text == x.name)
 		text_edit.clear()
 		text_edit.textCursor().insertText(p)
+	def show_automaton(self, automaton, row, column):
+		states = automaton.states
+		alphabet = automaton.alphabet
 
+		table_representation = QTableWidget()
+		table_representation.setColumnCount(len(alphabet))
+		table_representation.setRowCount(len(states))
+		states_labels = []
+		
+		for x in states:
+			label = ""
+			if x.acceptance:
+				label+= "*"
+			if x == states[0]:
+				label += "->"
+			label += x.label
+			states_labels.append(label)
+
+		table_representation.setVerticalHeaderLabels(states_labels)
+		table_representation.setHorizontalHeaderLabels(alphabet)
+		i = 0
+		for state in states:
+			header = table_representation.verticalHeaderItem(i)
+			for j in range(len(alphabet)):
+				symbol = table_representation.horizontalHeaderItem(j)
+				transition = [x.target for x in state.transitions if x.symbol == symbol.text()]
+				target_states = ""
+				for tst in transition:
+					target_states+=tst.label+" "
+				newItem = QTableWidgetItem(target_states)
+				newItem.setFlags(QtCore.Qt.ItemIsSelectable|QtCore.Qt.ItemIsEnabled )
+				table_representation.setItem(i, j, newItem)
+			i+=1
+		self.layout().addWidget(table_representation, row, column)
 
 class AutomatonOperations(QWidget):
 	def __init__(self):
@@ -274,6 +415,10 @@ class AutomatonOperations(QWidget):
 				automaton = next(x for x in automata if x.name == a_name1)
 				complement = automaton.complement()
 				self.build_table(complement)
+			if op == 4:
+				automaton = next(x for x in automata if x.name == a_name1)
+				reverse = automaton.reverse()
+				self.build_table(reverse)
 
 	def determinize(self, automaton):
 		dfa_automaton = automaton.ndfa_to_dfa()

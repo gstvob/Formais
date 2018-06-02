@@ -1,6 +1,18 @@
 from PyQt5.QtWidgets import QPushButton,QWidget, QTextEdit,QLineEdit, QLabel, QGridLayout, QComboBox
 from Models import *
 
+'''
+
+AUTOR : GUSTAVO BORGES FRANÇA
+
+'''
+
+'''
+   Essas classes são as classes visuais que mostram
+   os formulários para criação de gramáticas e expressões regulares.
+   sem nenhuma operação ou lógica complexa, apenas definições e chamadas. 
+'''
+
 class GrammarForm(QWidget):
     def __init__(self):
         super().__init__()

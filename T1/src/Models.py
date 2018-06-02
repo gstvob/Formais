@@ -2,7 +2,24 @@ import re
 import random
 import string
 import itertools
+
+'''
+
+AUTOR : GUSTAVO BORGES FRANÇA
+
+
+'''
+
+
+
+'''
+	Classe das gramáticas regulares, aqui se encontram
+	as lógicas para as operações que são possíveis com 
+	as gramáticas e as definições da mesma.
+'''
+
 class RegularGrammar:
+	#Construtor que inicializa com o nome da gr e suas produções.
 	def __init__(self, name, P):
 		self.name = name
 		self.p = P
@@ -13,7 +30,11 @@ class RegularGrammar:
 	def set_productions(self, productions):
 		self.p = productions
 		self._definition(productions)
-
+	
+	'''
+		O método que pega as produções de uma gramática regular
+		e transforma em uma definição formal para facilitar em algumas operações.
+	'''
 	def _definition(self, productions):
 		self.s = productions[0]
 		self.vn = []
@@ -26,6 +47,10 @@ class RegularGrammar:
 				self.vt.append(i)
 
 
+	'''
+		Método que recebe as produções de uma gramática e verifica
+		com o uso de uma expressão regular se a gramática está ok.
+	'''
 	def validate_grammar(self, productions):
 		productions = productions.replace(" ", "")
 		regex = re.compile(r'([A-Z]->([a-z0-9][A-Z]?|\&)([|][a-z0-9][A-Z]?)*(\n|\Z))*')
@@ -38,6 +63,14 @@ class RegularGrammar:
 				return False
 		except AttributeError:
 			return False
+
+	'''
+		Esse método verifica se existe épsilon na gramática
+		e se existe, se ele está sendo utilizado de forma correta.
+		Por simplicidade, para definir uma gramática com épsilon
+		o épsilon deve ser a primeira produção
+		S->&|etc...
+	'''
 	def _check_epsilon(self, productions):
 		if "&" in productions:
 			first_enter = productions.find('\n')
@@ -49,6 +82,14 @@ class RegularGrammar:
 					return False
 		return True
 
+
+	'''
+		Conversão de gramática regular para autômato finito.
+		os estados é o conjunto de não terminais, o alfabeto os terminais
+		é criado um estado novo que é final, e o algoritmo é o
+		visto em aula.
+		retorna um autômato(determínisto ou não determínistico dependendo da gramática)
+	'''
 	def convert(self):
 		states = [State(x) for x in self.vn]
 		alphabet = self.vt
@@ -78,6 +119,13 @@ class RegularGrammar:
 			state.insert_transitions(trsts)
 		return Automaton(states, alphabet)
 
+	'''
+		Realização de união de duas gramáticas
+		por simplicidade é necessário que os não terminais das gramáticas
+		sejam diferentes(não é realizado um renomeamento).
+		e então as produções são retiradas das gramáticas para definir uma nova
+		retorna uma gramática regular.
+	'''
 	def union(self, grammar):
 		p1 = self.p
 		p2 = grammar.p
@@ -106,6 +154,13 @@ class RegularGrammar:
 		return RegularGrammar("$at", union)
 
 
+	'''
+		Operação de concatenação de duas gramáticas.
+		similar a operação de união, as gr's não podem ter o mesmo
+		não terminal(não há renomeamento)
+		algoritmo executado o que foi visto em aula.
+		retorna uma gramática regular.
+	'''
 	def concatenate(self, grammar):
 		p1 = self.p
 		p2 = grammar.p
@@ -138,6 +193,12 @@ class RegularGrammar:
 			concat += "\n"+p2
 		return RegularGrammar("$at", concat)
 
+
+	'''
+		Operação estrela em uma gramática
+		simplesmente pega uma gramática regular e realiza a operação estrela
+		retornando uma gramática regular que é o fecho.
+	'''
 	def kleene_star(self):
 		p = self.p
 		S = p[0]
@@ -169,6 +230,10 @@ class RegularGrammar:
 			new_p = "Ω->&|"+new_p
 		return RegularGrammar("$at", new_p)
 
+
+'''
+	Classe com as definições e operações de expressão regular.
+'''
 class RegularExpression:
 
 	def __init__(self, name, expression):
@@ -386,18 +451,20 @@ class Automaton:
 	def complement(self):
 		new_states = [State(x.label, not x.acceptance) for x in self.states]
 		for s in new_states:
-			new_states.insert_transitions(next(x.transitions for x in self.states if s.label == x.label))
+			s.insert_transitions(next(x.transitions for x in self.states if s.label == x.label))
 		new_automaton = Automaton(new_states, self.alphabet)
 		return new_automaton
 
 	def intersection(self, automaton):
-		#A & B = NOT(NOT(A) U NOT(B))
+		nota.complete_automata()
+		notb.complete_automata()
 		nota = self.complement()
 		notb = automaton.complement()
 		notaunotb = nota.union(notb)
-		intersect = notaunotb.complement()
-		#thas the shit right ther.
+		det_notaunotb = notaunotb.ndfa_to_dfa()
+		intersect = det_notaunotb.complement()
 		return intersect
+
 	def remove_dead_states(self):
 		alive_states = []
 		alive_states_before = 0

@@ -3,6 +3,22 @@ from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAct
 from Forms import *
 from Views import *
 from Editors import *
+'''
+
+AUTOR : GUSTAVO BORGES FRANÇA
+
+
+'''
+
+
+
+
+'''
+    Essa classe apenas faz a parte da interface visual
+    ela inicializa varios componentes como menus e etc.
+    e mostra na telas as opções para o usuário utilizando
+    a biblioteca PyQt5
+'''
 
 class MainWindow(QMainWindow):
 
@@ -100,22 +116,34 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(enumerate_sentences)
 
     def _language_union(self, op):
+        union = None
         if not op:
-            #União definida pela gramática.
-            return False
+            union = GrammarOperations()
+            union.lr_binary_grammar(self.grammars, self.automata, 0)
         else:
             union = AutomatonOperations()
             union.automata_for_binary_op(self.automata, 0)
-            self.setCentralWidget(union)
+        self.setCentralWidget(union)
 
     def _language_complement(self, op):
+        complement = None
         if not op :
-            #complemento definido pela gramática
-            return False
+            complement = GrammarOperations()
+            complement.lr_unary_grammar(self.grammars, self.automata, 3)
         else:
             complement = AutomatonOperations()
             complement.automata_for_unary_op(self.automata, 3)
-            self.setCentralWidget(complement)
+        self.setCentralWidget(complement)
+
+    def _language_reverse(self, op):
+        reverse = None
+        if not op:
+            reverse = GrammarOperations()
+            reverse.lr_unary_grammar(self.grammars, self.automata, 4)
+        else:
+            reverse = AutomatonOperations()
+            reverse.automata_for_unary_op(self.automata, 4)
+        self.setCentralWidget(reverse)
 
     def set_newMenu(self, new_menu):
 

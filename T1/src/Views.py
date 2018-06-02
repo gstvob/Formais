@@ -1,6 +1,18 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout, QTableWidget, QTableWidgetItem
 
+
+'''
+
+AUTOR : GUSTAVO BORGES FRANÇA.
+
+'''
+
+'''
+	Mais classes para suporte a interface gráfica.
+	Aqui criam-se as visualizações das gramáticas, expressões e autômatos salvos.
+'''
+
 class View(QWidget):
 
 	def __init__(self, list):
