@@ -11,7 +11,7 @@ AUTOR : GUSTAVO BORGES FRANÇA
 
 
 '''
-	Essa classes fazem a "ponte" entre
+	Essas classes fazem a "ponte" entre
 	a lógica que se encontra nos modelos e a interface visual.
 	é por aqui que são feitas as ações que o usuário escolhe
 	usando de todos os métodos criados na parte dos modelos.
@@ -22,6 +22,14 @@ class GrammarOperations(QWidget):
 	def __init__(self):
 		super().__init__()
 
+	'''
+		Menu para escolher a gramática para converter
+		para autômato.
+		parâmetros são todas as gramáticas existentes
+		e todos os autômatos que existem.
+		Esses parâmetros servirão para dar suporte à gravação
+		de novos autômatos e gramáticas. 
+	'''
 	def choose_for_conversion(self, grammars, automata):
 		grid = QGridLayout(self)
 		choose = QComboBox(self)
@@ -32,6 +40,12 @@ class GrammarOperations(QWidget):
 		self.setLayout(grid)
 		self.show()
 
+	'''
+		Método que permite a escolha de gramaticas para realizar
+		as operações de união de gramática, concatenação, e fecho.
+		grammars = lista das gramáticas no sistema
+		op = Operação, um código número que diz se a operação é binária ou não.
+	'''
 	def choose_for_op(self, grammars, op):
 		grid = QGridLayout(self)
 		choose_grammar1 = QComboBox(self)
@@ -55,7 +69,7 @@ class GrammarOperations(QWidget):
 		choose_grammar1.activated[str].connect(lambda d: self._change_text(choose_grammar1.currentText(), g1, grammars))
 		grid.addWidget(choose_grammar1, 0, 0)
 		grid.addWidget(g1, 1, 0)
-		#união
+		
 		button = None
 		if op == 0:
 			button = QPushButton("Unir gramáticas")
@@ -70,7 +84,13 @@ class GrammarOperations(QWidget):
 		grid.addWidget(button,2,0)
 		self.setLayout(grid)
 		self.show()
-
+	'''
+		Método para dar suporte a escolha de gramáticas
+		para realizar operações em LR unárias.
+		Grammars = lista de gramáticas
+		automata = Lista de autômatos
+		op = Código de operação, qual operação será realizada.
+	'''
 	def lr_unary_grammar(self, grammars, automata, op):
 		grid = QGridLayout(self)
 		choose_grammar1 = QComboBox(self)
@@ -94,6 +114,12 @@ class GrammarOperations(QWidget):
 		grid.addWidget(button,2,0)
 		self.setLayout(grid)
 		self.show()
+
+	'''
+		Método para dar suporte a realização de operações binárias em LR's
+		definidas por GR's.
+		parâmetros iguais ao método acima.
+	'''
 	def lr_binary_grammar(self, grammars, automata, op):
 		grid = QGridLayout(self)
 		choose_grammar1 = QComboBox(self)
@@ -118,7 +144,7 @@ class GrammarOperations(QWidget):
 		if op == 0:
 			button = QPushButton("União")
 			button.clicked.connect(lambda d: self.operate_lr(choose_grammar1.currentText(), choose_grammar2.currentText(), grammars, automata, 0))
-		elif op ==1 :
+		elif op == 1 :
 			button = QPushButton("Interseccionar")
 			button.clicked.connect(lambda d: self.operate_lr(choose_grammar1.currentText(), choose_grammar2.currentText(), grammars, automata, 1))
 		else :
@@ -129,6 +155,14 @@ class GrammarOperations(QWidget):
 		self.setLayout(grid)
 		self.show()
 
+
+	'''
+		Método que faz a ponte entre visual e lógica de conversão de gramáticas
+		em autômatos
+		grammar_name = o nome da gramática que será convertida
+		automata = lista de automatos
+		grammars = lista de gramáticas
+	'''
 
 	def convert(self, grammar_name, automata, grammars):
 		grammar = next(x for x in grammars if x.name == grammar_name)
@@ -141,6 +175,15 @@ class GrammarOperations(QWidget):
 		self.layout().addWidget(regular_grammar, 1,0)
 		self.layout().addWidget(convert_, 2, 0)
 		convert_.clicked.connect(lambda d: self.apply_conversion(grammar, automata))
+
+	'''
+		Método para realizar as operações em gramáticas
+		união, concatenação e fecho.
+		name1 = nome da gramática1
+		name2 = nome da gramática2 se existir
+		grammars = lista de gramáticas
+		op = qual operação será realizada.
+	'''
 
 	def operate(self,name1,name2, grammars, op):
 		result = QTextEdit()
@@ -170,6 +213,12 @@ class GrammarOperations(QWidget):
 		self.layout().addWidget(result,3,0)
 		self.layout().addWidget(save,3,1)
 
+	'''
+		Método similar ao de cima, porém ele realiza a conversão em autômato
+		pois é para dar suporte à operações em linguagens regulares.
+		parâmetros iguais ao metódo de cima
+		automata = lista de autômatos
+	'''
 	def operate_lr(self, name1, name2, grammars,automata, op):
 		aop = AutomatonOperations()
 		if not op:
@@ -227,21 +276,42 @@ class GrammarOperations(QWidget):
 			save.clicked.connect(lambda d: self.save_automata(automata, reverse))
 			self.layout().addWidget(save, 2, 1)
 
-
+	'''
+		Realiza conversão da gramática e constrói uma tabela para mostra-la
+		grammar = gramática a ser convertida
+		automata = lista de autômatos
+	'''
 	def apply_conversion(self, grammar, automata):
 		automaton = grammar.convert()
 		self.build_table(automaton, automata)
 
+	'''
+		Suporte para poder determinizar autômatos que foram criados
+		atráves da conversão de uma gramática.
+		atualiza a tabela que mostra a gramática convertida.
+		automaton = autômato a ser determinizado
+		automata = lista de automatos
+	'''
 	def determinize(self, automaton, automata):
 		det = AutomatonOperations() 
 		dfa_automaton = det.determinize(automaton)
 		self.build_table(dfa_automaton, automata)
 
+	'''
+		Suporte para poder minimizar autômatos que foram criados
+		atraves de conversão de gramática.
+		atualiza a table que mostra a gramática convertida.
+		parâmetros iguais ao método de cima.
+	'''
 	def minimize(self, automaton, automata):
 		mini = AutomatonOperations()
 		minimal = mini.minimize(automaton)
 		self.build_table(minimal, automata)
 
+	'''
+		Método que constrói uma tabela para mostrar um autômato criado atráves de uma conversão.
+		parâmetros iguais ao método de cima.
+	'''
 	def build_table(self, automaton, automata):
 		states = automaton.states
 		alphabet = automaton.alphabet
@@ -290,6 +360,10 @@ class GrammarOperations(QWidget):
 			self.layout().addWidget(minimize, 2, 1)
 		self.layout().addWidget(save_automaton, 3,1)
 
+	'''
+		métodos com prefixo save servem para salvar uma gramática(autômato)
+		eles mostram um dialog na tela para o usuário dar um nome à nova entrada.
+	'''
 	def save_automata(self, automata, automaton):
 		saved = False
 
@@ -314,6 +388,11 @@ class GrammarOperations(QWidget):
 			else:
 				break
 
+	'''
+		Métodos para dar suporte visual.
+		sem valor lógico.
+		apenas consultas à documentação do pyqt5
+	'''
 	def _change_text(self, combobox_text, text_edit, grammars):
 		p = next(x.p for x in grammars if combobox_text == x.name)
 		text_edit.clear()
@@ -358,6 +437,10 @@ class AutomatonOperations(QWidget):
 	def __init__(self):
 		super().__init__()
 
+	'''
+		Métodos para realizar ponte entre lógica e interface.
+		mostram alguns elementos na tela para escolha de autômatos para realização de operações
+	'''
 	def automaton_test_input(self, automata):
 		grid = QGridLayout(self)
 		choose_automaton = QComboBox(self)
@@ -424,6 +507,14 @@ class AutomatonOperations(QWidget):
 		automaton = next(x for x in automata if a_name == x.name)
 		self.build_table(automaton, column=column)
 
+	'''
+		realização de operações com autômatos.
+		parâmetros
+		a_name1 = nome de autômato 1
+		a_name2 = nome do autômato 2, se existir.
+		automata = lista de autômatos.
+		op = operação.
+	'''
 	def operate(self, a_name1, a_name2, automata, op):
 		if a_name1!="" and a_name2!="":
 			if op == 0:
@@ -431,8 +522,6 @@ class AutomatonOperations(QWidget):
 				automaton2 = next(x for x in automata if x.name == a_name2)
 				automaton1 = automaton1.ndfa_to_dfa() if automaton1.non_deterministic else automaton1
 				automaton2 = automaton2.ndfa_to_dfa() if automaton2.non_deterministic else automaton2
-				automaton1 = self.minimize(automaton1)
-				automaton2 = self.minimize(automaton2)
 				union = automaton1.union(automaton2)
 				save_button = QPushButton("Salvar")
 				save_button.clicked.connect(lambda d: self.save_automaton(union, automata))
@@ -443,8 +532,6 @@ class AutomatonOperations(QWidget):
 				automaton2 = next(x for x in automata if x.name == a_name2)
 				automaton1 = automaton1.ndfa_to_dfa() if automaton1.non_deterministic else automaton1
 				automaton2 = automaton2.ndfa_to_dfa() if automaton2.non_deterministic else automaton2
-				automaton1 = self.minimize(automaton1)
-				automaton2 = self.minimize(automaton2)
 				intersect = automaton1.intersection(automaton2)
 				row = 3
 				for automaton in intersect:			
@@ -452,24 +539,64 @@ class AutomatonOperations(QWidget):
 					save_button = QPushButton("Salvar")
 					save_button.clicked.connect(lambda d: self.save_automaton(automaton, automata))
 					self.layout().addWidget(save_button, row, 1)
+				#self.build_table(intersect[len(intersect)-1], 3, 0)
+				#save_button = QPushButton("Salvar")
+				#save_button.clicked.connect(lambda d: self.save_automaton(intersect[len(intersect)-1], automata))
+				#self.layout().addWidget(save_button, 3, 1)
+			else:
+				automaton1 = next(x for x in automata if x.name == a_name1)
+				automaton2 = next(x for x in automata if x.name == a_name2)
+				automaton1 = automaton1.ndfa_to_dfa() if automaton1.non_deterministic else automaton1
+				automaton2 = automaton2.ndfa_to_dfa() if automaton2.non_deterministic else automaton2
+				diff = automaton1.difference(automaton2)
+				row = 3
+				for automaton in diff:			
+					self.build_table(automaton, row, 0)
+					save_button = QPushButton("Salvar")
+					save_button.clicked.connect(lambda d: self.save_automaton(automaton, automata))
+					self.layout().addWidget(save_button, row, 1)
+				#self.build_table(diff[len(diff)-1], 3, 0)
+				#save_button = QPushButton("Salvar")
+				#save_button.clicked.connect(lambda d: self.save_automaton(diff[len(diff)-1], automata))
+				#self.layout().addWidget(save_button, 3, 1)
 		elif a_name1!="":
 			if op == 3:
 				automaton = next(x for x in automata if x.name == a_name1)
 				complement = automaton.complement()
+				save_button = QPushButton("Salvar")
+				save_button.clicked.connect(lambda d: self.save_automaton(union, automata))
+				self.layout().addWidget(save_button, 3, 1)
 				self.build_table(complement)
 			if op == 4:
 				automaton = next(x for x in automata if x.name == a_name1)
 				reverse = automaton.reverse()
+				save_button = QPushButton("Salvar")
+				save_button.clicked.connect(lambda d: self.save_automaton(union, automata))
+				self.layout().addWidget(save_button, 3, 1)
 				self.build_table(reverse)
 
+	'''
+		determinização de autômatos.
+		parâmetro
+		automaton = AFND.
+		retorna um AFD.
+	'''
 	def determinize(self, automaton):
 		dfa_automaton = automaton.ndfa_to_dfa()
 		return dfa_automaton
-
+	'''
+		minimização de autômatos
+		automaton = AFD.
+		retorna um AFD mínimo.
+	'''
 	def minimize(self, automaton):
 		minimal = automaton.minimize()
 		return minimal
 
+	'''
+		Interface para realizar a operação de listagem de sentenças.
+		automata = lista de autômatos.
+	'''
 	def enumerate_nsize_inputs(self, automata):
 		grid = QGridLayout(self)
 		choose_automaton = QComboBox(self)
@@ -481,6 +608,11 @@ class AutomatonOperations(QWidget):
 		self.setLayout(grid)
 		self.show()
 
+	'''
+		Método para permitir usuário escolher o tamanho das sentenças que ele deseja listar.
+		automaton_name = nome do autômato,
+		automata = lista dos autômatos.
+	'''
 	def _choose_size(self, automaton_name, automata):
 		automaton = next(x for x in automata if x.name == automaton_name)
 		size = QLineEdit(self)
@@ -493,6 +625,11 @@ class AutomatonOperations(QWidget):
 		self.layout().addWidget(size, 2, 0)
 		self.layout().addWidget(button,3, 0)
 
+	'''
+		Chamar a lógica de enumeração das sentenças e mostrar
+		size = tamanho das sentenças
+		automaton = AFD
+	'''	
 	def _enumerate(self, size, automaton):
 		result = QTextEdit()
 		result.setReadOnly(True)
@@ -506,6 +643,11 @@ class AutomatonOperations(QWidget):
 
 		self.layout().addWidget(result, 4, 0)
 
+	'''
+		Permitir o usuário entrar uma sentença para verificar se o autômato aceita.
+		automaton_name = nome do autômato.
+		automata = lista dos autômatos no sistema.
+	'''
 	def _input(self, automaton_name, automata):
 		automaton = next(x for x in automata if x.name == automaton_name)
 		inp = QLineEdit(self)
@@ -518,6 +660,12 @@ class AutomatonOperations(QWidget):
 		self.layout().addWidget(inp, 2, 0)
 		self.layout().addWidget(button,3, 0)
 
+	'''
+		Chama a lógica de verificação de entrada.
+		mostra na tela se aceitou ou recusou
+		inp = sentença
+		automaton = AFD
+	'''
 	def _test_input(self, inp, automaton):
 		test = automaton.parse_input(inp)
 		result = QLineEdit()
@@ -531,6 +679,11 @@ class AutomatonOperations(QWidget):
 
 		self.layout().addWidget(result, 3, 1)
 
+	'''
+		Escolha de autômato para converter para uma gramática regular.
+		automata = lista de autômatos no sistema.
+		grammars = lista de gramáticas no sistema.
+	'''
 	def choose_for_conversion(self, automata, grammars):
 		grid = QGridLayout()
 		choose = QComboBox(self)
@@ -541,6 +694,12 @@ class AutomatonOperations(QWidget):
 		self.setLayout(grid)
 		self.show()
 
+	'''
+		mostrar o autômato que foi escolhido para ser convertido em gramática.
+		automaton_name = nome do autômato escolhido.
+		automata = lista de automatos.
+		grammars = lista de gramáticas.
+	'''
 	def show_automaton(self, automaton_name, automata, grammars):
 		automaton = next(x for x in automata if x.name == automaton_name)
 		self.build_table(automaton)
@@ -549,19 +708,11 @@ class AutomatonOperations(QWidget):
 		convert_to_grammar.clicked.connect(lambda d: self.convert(automaton, grammars))
 		self.layout().addWidget(convert_to_grammar, 2, 1)
 
-	def save_automaton(self, automaton, automata):
-		saved = False
-
-		while not saved:			
-			name, ok = QInputDialog().getText(self,"Input Dialog", "Nomeie este autômato")
-			if ok:
-				if not any(x.name == name for x in automata) and name != "":			
-					automaton.set_name(name)
-					automata.append(automaton)
-					saved = True
-			else:
-				break
-
+	'''
+		monta uma tabela para mostrar autômatos.
+		similar ao build_table do GrammarOperations()
+		porém aqui não são permitidos determinizações e minimizações.
+	'''
 	def build_table(self, automaton,row = 1, column=1):
 		states = automaton.states
 		alphabet = automaton.alphabet
@@ -597,10 +748,21 @@ class AutomatonOperations(QWidget):
 
 		self.layout().addWidget(table_representation, row, column)
 
+	'''
+		converte o automato em gramatica e mostra
+		automaton = AF escolhido.
+		grammars = lista de gramáticas.
+	'''
 	def convert(self, automaton, grammars):
 		grammar = automaton.convert()
 		self.print_grammar(grammar, grammars)
 
+
+	'''
+		mostra as produções de uma gramática na tela
+		grammar = gramática que será mostrada.
+		grammars = lista de gramáticas
+	'''
 	def print_grammar(self, grammar, grammars):
 		productions = QTextEdit()
 		productions.setReadOnly(True)
@@ -609,3 +771,21 @@ class AutomatonOperations(QWidget):
 		#possível botão pra salvar a gramática?
 
 		self.layout().addWidget(productions,1,0)
+	'''
+		método para dar suporte a salvamento de automatos criados por operações
+		como união, intersec e etc.
+		automaton = automato a ser salvo
+		automata = lista de automatos.
+	'''
+	def save_automaton(self, automaton, automata):
+		saved = False
+
+		while not saved:			
+			name, ok = QInputDialog().getText(self,"Input Dialog", "Nomeie este autômato")
+			if ok:
+				if not any(x.name == name for x in automata) and name != "":			
+					automaton.set_name(name)
+					automata.append(automaton)
+					saved = True
+			else:
+				break

@@ -135,6 +135,16 @@ class MainWindow(QMainWindow):
             intersect.automata_for_binary_op(self.automata, 1)
         self.setCentralWidget(intersect)
 
+    def _language_difference(self, op):
+        diff = None
+        if not op:
+            diff = GrammarOperations()
+            diff.lr_binary_grammar(self.grammars, self.automata, 2)
+        else:
+            diff = AutomatonOperations()
+            diff.automata_for_binary_op(self.automata, 2)
+        self.setCentralWidget(diff)
+
     def _language_complement(self, op):
         complement = None
         if not op :
@@ -246,11 +256,6 @@ class MainWindow(QMainWindow):
         union_lr_defined_grammar.triggered.connect(lambda d: self._language_union(0))
         union_lr_by_af.triggered.connect(lambda d: self._language_union(1))
 
-        complement_lr_defined_grammar = QAction("Por gramática", self)
-        complement_lr_by_af = QAction("Por autômato", self)
-        complement_lr_defined_grammar.triggered.connect(lambda d: self._language_complement(0))
-        complement_lr_by_af.triggered.connect(lambda d: self._language_complement(1))
-
         intersection_lr_defined_grammar = QAction("Por gramática", self)
         intersection_lr_by_af = QAction("Por autômato", self)
         intersection_lr_defined_grammar.triggered.connect(lambda d: self._language_intersect(0))
@@ -258,6 +263,13 @@ class MainWindow(QMainWindow):
 
         diff_lr_defined_grammar = QAction("Por gramática", self)
         diff_lr_by_af = QAction("Por autômato", self)
+        diff_lr_defined_grammar.triggered.connect(lambda d : self._language_difference(0))
+        diff_lr_by_af.triggered.connect(lambda d: self._language_difference(0))
+
+        complement_lr_defined_grammar = QAction("Por gramática", self)
+        complement_lr_by_af = QAction("Por autômato", self)
+        complement_lr_defined_grammar.triggered.connect(lambda d: self._language_complement(0))
+        complement_lr_by_af.triggered.connect(lambda d: self._language_complement(1))
 
         reverse_lr_defined_grammar = QAction("Por gramática",self)
         reverse_lr_by_af = QAction("Por autômato",self)

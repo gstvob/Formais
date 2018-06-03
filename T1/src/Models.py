@@ -11,7 +11,6 @@ AUTOR : GUSTAVO BORGES FRANÇA
 '''
 
 
-
 '''
 	Classe das gramáticas regulares, aqui se encontram
 	as lógicas para as operações que são possíveis com 
@@ -236,6 +235,9 @@ class RegularGrammar:
 '''
 class RegularExpression:
 
+	'''
+		construtor que inicializa uma expressão com seu nome e a expressão em si.
+	'''
 	def __init__(self, name, expression):
 		self.name = name
 		self.expression = expression
@@ -246,6 +248,12 @@ class RegularExpression:
 	def set_expression(self, exp):
 		self.expression = exp
 
+	'''
+		método para validar uma expressão.
+		utiliza outra expressão para ver se algumas coisas estão certo
+		(apesar de não dar para ver tudo por conta do "()")
+		depois verifica se o número de "(" é igual ao número de ")"
+	'''
 	def validate_expression(self, expression):
 		expression = expression.replace(" ", "")
 		regex = re.compile(r'[(]?[a-z0-9]+([?+*]?([)][?+*]?)?)([|]?[(]?[a-z0-9]+([?+*]?([)][?+*]?[)]?)?))*')
@@ -264,7 +272,20 @@ class RegularExpression:
 		except AttributeError:
 			return False
 
+
+'''
+	
+	Classe para definição de autômatos finitos determínisticos e não determínisticos
+	e suas respectivas operações.
+
+'''
 class Automaton:
+	'''
+		Construtor que inicializa autômato com uma lista de estados(classe)
+		e uma lista de símbolos do alfabeto
+		verifica se é deterministico ou não , define o estado inicial(sempre o primeiro estado da lista de estados)
+		e cria a lista de estados finais
+	'''
 	def __init__(self, states, alphabet):
 		self.name = ""
 		self.states = states
@@ -288,6 +309,18 @@ class Automaton:
 													trst != x):
 					self.non_deterministic = True
 
+	'''
+		método para realização da determinização de autômatos.
+		o algoritmo utilizado é o visto em sala
+		o estado inicial é "copiado" para os estados determínisticos
+		e suas transições por símbolo são unidas como se fossem um estado apenas.
+		essas transições são então adicionadas ao conjunto de estados
+		determínisticos e então são construídas suas transições
+		a partir dos estados não deterministicos que compõem o estado
+		determínistico.
+
+		retorna então um AFD
+	'''
 	def ndfa_to_dfa(self):
 		NDstates = self.states
 		Dstates = []
@@ -320,9 +353,9 @@ class Automaton:
 					label = ""
 					acceptance = False
 					for k in state:
-						print(k)
-						nd = next(x for x in NDstates if x.label == k)
-						tx += [x for x in nd.transitions if x.symbol == i]
+						if k.isalpha():
+							nd = next(x for x in NDstates if x.label == k or x.label == "["+k+"]")
+							tx += [x for x in nd.transitions if x.symbol == i]
 					for l in tx:
 						if l.target.acceptance:
 							acceptance = True
@@ -344,6 +377,20 @@ class Automaton:
 		return Automaton(Dstates, self.alphabet)
 
 
+	'''
+		Método para minimizar um autômato.
+		algoritmo utilizado é o algoritmo de Brzozowski.
+		que consiste em inversões e determinizações seguidas
+		para minimizar
+
+		afd(min) = alc(det(rev(alc(det(rev(afd))))))
+		o algoritmo diz que se eu inverter, determinizar um autômato
+		e construir apenas os estados alcançaveis ei obtenho um afd
+		minimo para o reverso daquela linguagem, repetindo o processo mais uma
+		vez, eu obtenho o afd minimo para a linguagem inicial.
+
+		retorna um AFD mínimo.
+	'''
 	def minimize(self):
 		a1 = self.reverse()
 		a2 = a1.ndfa_to_dfa() if a1.non_deterministic else a1
@@ -355,6 +402,21 @@ class Automaton:
 		a3.remove_dead_states()
 		return a3
 
+	'''
+		converte um autômato em uma gramática regular
+		algoritmo utilizado o que foi visto em aula.
+		onde os estados são os símbolos não terminais
+		e o alfabeto os simbolos terminais
+		as produções então são definidas
+		se um estado S vai para um estado A por um símbolo a e esse estado não é final
+		na gramática esse estado fica S-> aA
+		se A for final
+		S-> aA|a 
+		e se o estado inicial S for de aceitação.
+		S->&
+
+		retorna uma gramática regular.
+	'''
 	def convert(self):
 		vn = [x.label for x in self.states]
 		vt = self.alphabet
@@ -380,6 +442,13 @@ class Automaton:
 				productions = productions[:-1] + "\n"
 		return RegularGrammar("$at", productions)
 
+	'''
+		Dado uma entrada, e um AFD
+		verifica se a entrada inp é aceita por esse AFD
+		completa o automato e vai percorrendo os estados.
+		quando a entrada termina verifica se o estado no qual parou é de aceitação.
+		e retorna true ou false
+	'''
 	def parse_input(self, inp):
 		self.complete_automata()
 		currState = self.q0
@@ -394,6 +463,11 @@ class Automaton:
 		else:
 			return False
 
+	'''
+		Gera todas as sequencias de tamanho n de caracteres do alfabeto
+		e verifica quais são aceitos, juntando-os numa lista
+		retorna essa lista.
+	'''
 	def enumerate(self, size):
 		enum = []
 		for item in itertools.product(self.alphabet, repeat=int(size)):
@@ -401,8 +475,17 @@ class Automaton:
 				enum.append("".join(item))
 		return enum
 
+	'''
+		Completa o autômato.
+		arruma as transições que não existem, colocando um '-'
+		cria um estado phi (estado de erro)
+		e todo estado que vai para o estado - agora vai para phi
+		e phi vai para ele mesmo por todos os simbolos de alfabeto.
+
+	'''
 	def complete_automata(self):
-		phi = State("Phi", False)
+		self.fix_transitions()
+		phi = State("Ψ", False)
 		alive = False
 		if phi not in self.states:
 			for a in self.alphabet:
@@ -415,9 +498,21 @@ class Automaton:
 			if alive:
 				self.states.append(phi)
 
+	'''
+		Operação de reverso no automato.
+		cria um novo estado inicial.
+		se o estado inicial de M é final o estado inicial de M' (novo estado criado)
+		também é.
+		para cada estado então as transições são invertidas
+		se A vai para B por a em M, B vai para A por a em M'
+		os finais de M não são mais finais em M'
+		o inicial de M agora é final em M'
+		o estado inicial novo de M' clona as transições dos que eram finais em M
+		retorna M^r 
+	'''
 	def reverse(self):
 		start_final = self.q0.acceptance
-		new_q = State("q0'", start_final)
+		new_q = State("Ω", start_final)
 		states = [State(x.label) for x in self.states]
 
 		for s in self.states:
@@ -447,20 +542,35 @@ class Automaton:
 		self.prettify(new_states)
 		return Automaton(new_states, self.alphabet)
 
+	'''
+		realiza a união de dois automatos
+		automaton = automato2
+		é criado um estado inicial novo que é de aceitação se o estado de M1 ou de M2 são de aceitação
+		são copiadas as transições do q0 de M1 e do q0 de M2 para esse estado novo
+		os estados todos são copiados para M3
+		retorna M3
+	'''
 	def union(self, automaton):
-		new_start = State("q0'", (self.q0.acceptance or automaton.q0.acceptance))
+		new_start = State("Ω", (self.q0.acceptance or automaton.q0.acceptance))
 		t1 = self.q0.transitions
 		t2 = automaton.q0.transitions
-		t3 = t1+t2
+		t3 = list(set(t1+t2))
 		new_start.insert_transitions(t3)
 		new_states = []
 		new_states.append(new_start)
 		new_states += self.states
 		new_states += automaton.states
 
-		automaton = Automaton(new_states, self.alphabet+automaton.alphabet)
+		automaton = Automaton(new_states, list(set(self.alphabet+automaton.alphabet)))
+		automaton.fix_transitions()
 		return automaton
 
+
+	'''
+		Complemento de AF
+		completa o automato e transforma estados que são de aceitação em não aceitação
+		e os de não aceitação em de aceitação.
+	'''
 	def complement(self):
 		self.complete_automata()
 		new_states = [State(x.label, not x.acceptance) for x in self.states]
@@ -469,18 +579,18 @@ class Automaton:
 		new_automaton = Automaton(new_states, self.alphabet)
 		return new_automaton
 
+	'''
+		Método de intersecção de autômatos.
+		A ∩ B = not(not(A) U not(b))
+	'''
 	def intersection(self, automaton):
 		nota = self.complement()
 		notb = automaton.complement()
 		notaunotb = nota.union(notb)
-		notaunotb.fix_transitions()
-		notaunotb.prettify(notaunotb.states)
-		print("".join(str(notaunotb.states)))
+		notaunotb.complete_automata()
 		det_notaunotb = notaunotb.ndfa_to_dfa() if notaunotb.non_deterministic else notaunotb
 		mini = det_notaunotb.minimize()
-		final = det_notaunotb.complement()
-		det_notaunotb = notaunotb
-		final = notaunotb
+		final = mini.complement()
 		intersect = []
 		intersect.append(nota)
 		intersect.append(notb)
@@ -488,6 +598,24 @@ class Automaton:
 		intersect.append(final)
 		return intersect
 
+
+	'''
+		Método para realização da diferença de dois autômatos
+		que aceitam duas LR's diferentes.
+
+		L1-L2 = L1 ∩ NOT(L2) = NOT(NOT(L1) U L2)
+
+	'''
+	def difference(self, automaton):
+		automaton.complete_automata()
+		return self.intersection(self, automaton.complement())
+
+	'''
+		Método para remoção de estados mortos.
+		cria uma lista de estados vivos e vai adicionando a esta lista
+		estados que
+		são finais / alcançam estados finais por 1 ou mais passos.
+	'''
 	def remove_dead_states(self):
 		alive_states = []
 		alive_states_before = 0
@@ -507,13 +635,19 @@ class Automaton:
 		self.states = [x for x in self.states if x in alive_states]
 		
 		if not self.states:
-			self.states = State("VAZIO")
+			self.states = State("ϴ")
 		else:		
 			for s in self.states:
 				for t in s.transitions:
 					if t.target.label not in [x.label for x in self.states]:
 						s.replace_transition(Transition(State("-"), t.symbol), t)
 
+	'''
+		remoção de estados inalcançáveis.
+		cria uma lista de estados alcançaveis.
+		partindo de q0 os estados que são alcançáveis são adicionados a esta lista
+		remove os que não estão nessa lista.
+	'''
 	def remove_unreachable_states(self):
 		new_states = self.states
 		reachable_states = []
@@ -526,6 +660,12 @@ class Automaton:
 		new_states = [x for x in self.states if x.label in [y.label for y in reachable_states]]
 		self.states = new_states
 
+	'''
+		Fusão de estados iguais.
+		o algoritmo de minimização em alguns casos cria estados que são iguais
+		estaodos que vão para os mesmos estados por um mesmo símbolo.
+		esses estados são juntados em um só, e não altera a linguagem.
+	'''
 	def merge_equal_states(self):
 		new_states = []
 		new_states.append(self.q0)
@@ -559,6 +699,12 @@ class Automaton:
 	S->aA|bS|b
 	A->aS|bA|a
 	'''
+
+	'''
+		"Embelezamento" dos nomes dos estados.
+		altera o nome dos estados para facilitar leitura.
+		algumas operações geram estados com nomes esquisitos.
+	'''
 	def prettify(self, states):
 		for s in states:
 			while True:
@@ -566,13 +712,20 @@ class Automaton:
 				if new_label not in [x.label for x in states]:
 					s.change_label(new_label)
 					break
-	
+	'''
+		arruma as transições dos estados que teoricamente não existem
+		coloca um estado "-"
+	'''
 	def fix_transitions(self):
 		for c in self.alphabet:
 			for s in self.states:
 				if c not in (t.symbol for t in s.transitions):
-					s.add_transition(Transition(State("-"), c))			
+					s.add_transition(Transition(State("-"), c))
+	
 
+'''
+	Definição do estado dos AF's
+'''
 class State:
     def __init__(self, label, acceptance=False):
         self.acceptance = acceptance
@@ -589,9 +742,15 @@ class State:
     def add_transition(self, transition):
         self.transitions.append(transition)
     def replace_transition(self, new_t, old_t):
-        self.transitions[self.transitions.index(old_t)] = new_t  
-
+        self.transitions[self.transitions.index(old_t)] = new_t
+'''
+	Definição das transições dos estados dos AF's
+'''
 class Transition:
     def __init__(self, target, symbol):
         self.symbol = symbol
         self.target = target
+    def __eq__(self, other):
+    	return self.target.label == other.target.label and self.symbol == other.symbol
+    def __hash__(self):
+    	return hash(('target_label', self.target.label, 'symbol', self.symbol))
