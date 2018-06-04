@@ -33,11 +33,11 @@ class MainWindow(QMainWindow):
         self.statusBar()
 
         menubar = self.menuBar()
-        new_menu = menubar.addMenu("&New")
-        list_menu = menubar.addMenu("&List")
-        edit_menu = menubar.addMenu("&Edit")
-        conversion_menu = menubar.addMenu("&Convert")
-        operation_menu = menubar.addMenu("&Operations")
+        new_menu = menubar.addMenu("&Novo")
+        list_menu = menubar.addMenu("&Listar")
+        edit_menu = menubar.addMenu("&Editar")
+        conversion_menu = menubar.addMenu("&Converter")
+        operation_menu = menubar.addMenu("&Operações")
 
         self.set_newMenu(new_menu)
         self.set_listMenu(list_menu)
@@ -167,16 +167,16 @@ class MainWindow(QMainWindow):
 
     def set_newMenu(self, new_menu):
 
-        new_regularG = QAction("&Regular Grammar", self)
-        new_regularG.setStatusTip("New regular grammar")
+        new_regularG = QAction("&Gramática Regular", self)
+        new_regularG.setStatusTip("Nova gramática regular")
         new_regularG.triggered.connect(self._create_grammar)
-        new_regularE = QAction("&Regular Expression", self)
-        new_regularE.setStatusTip("New regular expression")
+        new_regularE = QAction("&Expressão regular", self)
+        new_regularE.setStatusTip("nova expressão regular")
         new_regularE.triggered.connect(self._create_expression)
 
-        exitAct = QAction('&Exit', self)
+        exitAct = QAction('&Sair', self)
         exitAct.setShortcut('Ctrl+Q')
-        exitAct.setStatusTip('Exit application')
+        exitAct.setStatusTip('fechar aplicação')
         exitAct.triggered.connect(qApp.quit)
 
         new_menu.addAction(new_regularG)
@@ -184,16 +184,16 @@ class MainWindow(QMainWindow):
         new_menu.addAction(exitAct)
 
     def set_listMenu(self, list_menu):
-        list_regularG = QAction("&List regular grammars", self)
-        list_regularG.setStatusTip("View all saved regular grammars")
+        list_regularG = QAction("&Listar gramáticas regulares", self)
+        list_regularG.setStatusTip("Ver todas as gramáticas salvas")
         list_regularG.triggered.connect(self._view_grammars)
 
-        list_regularE = QAction("&List regular expressions", self)
-        list_regularE.setStatusTip("View all saved regular expressions")
+        list_regularE = QAction("&Listar expressões regulares", self)
+        list_regularE.setStatusTip("Ver todas as expressões regulares salvas")
         list_regularE.triggered.connect(self._view_expressions)
 
-        list_automata = QAction("&List Automata", self)
-        list_automata.setStatusTip("View all saved automata")
+        list_automata = QAction("&Listar Autômatos", self)
+        list_automata.setStatusTip("Ver todos os autômatos salvos")
         list_automata.triggered.connect(self._view_automata)
 
         list_menu.addAction(list_regularG)
@@ -201,24 +201,24 @@ class MainWindow(QMainWindow):
         list_menu.addAction(list_automata)
         
     def set_editMenu(self, edit_menu):
-        edit_regularG = QAction("&Edit regular grammar", self)
-        edit_regularG.setStatusTip("Edit a regular grammar")
+        edit_regularG = QAction("&Editar gramática regular", self)
+        edit_regularG.setStatusTip("Editar uma gramática regular")
         edit_regularG.triggered.connect(self._edit_grammars)
 
-        edit_regularE = QAction("&Edit regular expression", self)
-        edit_regularE.setStatusTip("Edit a regular expression")
+        edit_regularE = QAction("&Editar expressão regular", self)
+        edit_regularE.setStatusTip("Editar uma expressão regular")
         edit_regularE.triggered.connect(self._edit_expressions)
 
         edit_menu.addAction(edit_regularG)
         edit_menu.addAction(edit_regularE)
 
     def set_conversion_menu(self, conversion_menu):
-        grammar_automaton = QAction("&Convert grammar to automaton", self)
-        grammar_automaton.setStatusTip("Convert a regular grammar to automaton")
+        grammar_automaton = QAction("&Converter gramática para autômato", self)
+        grammar_automaton.setStatusTip("Converter uma gramática regular para autômato")
         grammar_automaton.triggered.connect(self._convert_grammar_automaton)
 
-        automaton_grammar = QAction("&Convert automaton to grammar", self)
-        automaton_grammar.setStatusTip("Convert a finite automaton to a regular grammar")
+        automaton_grammar = QAction("&Converter autômato para gramática", self)
+        automaton_grammar.setStatusTip("Converter um AF em uma gramática regular")
         automaton_grammar.triggered.connect(self._convert_automaton_grammar)
 
         conversion_menu.addAction(grammar_automaton)

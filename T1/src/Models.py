@@ -4,13 +4,8 @@ import string
 import itertools
 
 '''
-
 AUTOR : GUSTAVO BORGES FRANÇA
-
-
 '''
-
-
 '''
 	Classe das gramáticas regulares, aqui se encontram
 	as lógicas para as operações que são possíveis com 
@@ -598,7 +593,6 @@ class Automaton:
 		intersect.append(final)
 		return intersect
 
-
 	'''
 		Método para realização da diferença de dois autômatos
 		que aceitam duas LR's diferentes.
@@ -609,7 +603,6 @@ class Automaton:
 	def difference(self, automaton):
 		automaton.complete_automata()
 		return self.intersection(self, automaton.complement())
-
 	'''
 		Método para remoção de estados mortos.
 		cria uma lista de estados vivos e vai adicionando a esta lista
