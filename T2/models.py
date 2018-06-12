@@ -11,15 +11,32 @@ class ContextFreeGrammar:
 
 	def decompose_and_formalize(self):
 		symbols = []
-		for p in self.productions:
-			if p not in [symbol.label for symbol in symbols] and (p.isalpha() or p == "&"):
+		prods = self.productions.split("\n")
+		for p in prods:
+			symbol = p.split("->")[0]
+			if symbol not in [ss.label for ss in symbols]:
+				print(symbol)
+				symbols.append(Symbol(symbol))
+
+		prod = self.productions
+
+		for S in symbols:
+			prod=prod.replace(S.label, "")
+
+		prod = prod.replace("\n", ",")
+		prod = prod.replace("->","")
+		prod = prod.replace("|", ",")
+		prod = prod.replace(" ", "")
+		prod = prod.split(",")
+		for p in prod:
+			if p not in [ss.label for ss in symbols]:
 				symbols.append(Symbol(p))
 		for s in symbols:
-			if s.label.isalpha() or s.label == "&":
-				if s.label.isupper():
-					self.vn.add(s)
-				else:
-					self.vt.add(s)
+			if s.label.islower() or s.label.isdigit() or s.label == "&":
+				self.vt.add(s)
+			else:
+				self.vn.add(s)
+
 		self.S = symbols[0]
 
 	def print_stuff(self):
@@ -87,6 +104,6 @@ class Symbol:
 	def print_firsts(self):
 		print(str(self.first))
 
-grammar = "S->Sa|bB|cC|Ad|\nA->BBAw|h|&\nB->f|&"
+grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 cfg = ContextFreeGrammar(grammar)
 cfg.print_stuff()
