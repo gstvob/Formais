@@ -55,7 +55,6 @@ class Symbol:
 	def __repr__(self):
 		return self.label
 
-	#needs tweaking about the epsilons
 	def set_firsts(self, cfg):
 		p = cfg.productions
 		vn = cfg.vn
@@ -65,45 +64,45 @@ class Symbol:
 		else:
 			prods = p.split("\n")
 			print(prods)
-			that_prod = next(p for p in prods if p[0] == self.label)
+			that_prod = next(p for p in prods if (p.split("->")[0]) == self.label)
 			that_prod = that_prod.split("->")[1]
+			print(that_prod)
 			for x in range(len(that_prod)):
 				if that_prod[x] in [y.label for y in vt]: 
 					if x-1 == -1 or that_prod[(x-1)] == "|":
 						symbol = next(s for s in vt if s.label == that_prod[x])
 						self.first.add(symbol)
+			# se X->S1 S2 S3
+			# first(S1) ta em X
+			# se epsilon ta em S1, first(S2) ta em X e assim vai
+			splitemup = that_prod.split("|")
+			print(splitemup)
 
-			for x in range(len(that_prod)):
-				if that_prod[x] in [y.label for y in vn]:
-					if x-1 == -1 or that_prod[(x-1)] == "|":
-						symbol = next(s for s in vn if s.label == that_prod[x])
-						print(symbol)
-						if symbol.label != self.label:
+			for x in splitemup:
+				y = x.split(" ")
+				previousHadEpsilon=True
+				addedTerminal = False
+				for k in range(len(y)):
+					if y[k] in [z.label for z in vn]:
+						symbol = next(s for s in vn if s.label == y[k])
+						if y[k] != self.label:
 							symbol.set_firsts(cfg)
 							self.first.update(symbol.first)
-						if "&" in [y.label for y in symbol.first]:
+						if "&" in [l.label for l in symbol.first]:
 							epsilon = next(s for s in symbol.first if s.label == "&")
 							self.first.remove(epsilon)
-							index = x
-							while True:
-								if (index+1) <= len(that_prod)-1 and that_prod[index+1] != "|" :
-									next_symbol = next(s for s in vt|vn if s.label == that_prod[index+1])
-								else:
-									self.first.add(epsilon)
-									break
-								if "&" in that_prod:
-									self.first.add(epsilon)
-								if next_symbol in vt:
-									self.first.add(next_symbol)
-									break
-								else:
-									if next_symbol.label != self.label:
-										next_symbol.set_firsts(cfg)
-										self.first.update(next_symbol.first)
-									index+=1
+							previousHadEpsilon=True
+						else:
+							previousHadEpsilon=False
+					elif y[k] in [s.label for s in vt]:
+						if previousHadEpsilon: 
+							self.first.add(next(s for s in vt if s.label == y[k]))
+							addedTerminal=True
+				if not addedTerminal:
+					self.first.add(next(s for s in vt if s.label == "&"))
 	def print_firsts(self):
 		print(str(self.first))
 
-grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
+grammar = "S1->S1 a|b B|c B|A d|&\nA->B B A w|h|&\nB->f|&"
 cfg = ContextFreeGrammar(grammar)
 cfg.print_stuff()
