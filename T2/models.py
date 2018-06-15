@@ -43,24 +43,25 @@ class ContextFreeGrammar:
 		p = cfg.productions
 		vn = cfg.vn
 		vt = cfg.vt
+
 		if X in vt:
 			X.first.add(X)
 		else:
 			prods = p.split("\n")
-			print(prods)
 			that_prod = next(p for p in prods if (p.split("->")[0]) == X.label)
 			that_prod = that_prod.split("->")[1]
-			print(that_prod)
 			for x in range(len(that_prod)):
 				if that_prod[x] in [y.label for y in vt]: 
 					if x-1 == -1 or that_prod[(x-1)] == "|":
 						symbol = next(s for s in vt if s.label == that_prod[x])
 						X.first.add(symbol)
+
+
+			#aqui o first do A é {&,h}
 			# se X->S1 S2 S3
 			# first(S1) ta em X
 			# se epsilon ta em S1, first(S2) ta em X e assim vai
 			splitemup = that_prod.split("|")
-			print(splitemup)
 
 			for x in splitemup:
 				y = x.split(" ")
@@ -69,15 +70,18 @@ class ContextFreeGrammar:
 				for k in range(len(y)):
 					if y[k] in [z.label for z in vn]:
 						yn = next(s for s in vn if s.label == y[k])
-						if y[k] != X.label:
-							self.set_firsts(yn)
-							X.first.update(yn.first)
-						if "&" in [l.label for l in yn.first]:
-							epsilon = next(s for s in yn.first if s.label == "&")
-							X.first.remove(epsilon)
-							previousHadEpsilon=True
-						else:
-							previousHadEpsilon=False
+						if previousHadEpsilon:
+							if y[k] != X.label:
+								self.set_firsts(yn)
+								X.first.update(yn.first)
+							if "&" in [l.label for l in yn.first]:
+								epsilon = next(s for s in yn.first if s.label == "&")
+								if "&" not in that_prod:
+									X.first.remove(epsilon)
+								previousHadEpsilon=True
+							else:
+								previousHadEpsilon=False
+
 					elif y[k] in [s.label for s in vt]:
 						if previousHadEpsilon: 
 							X.first.add(next(s for s in vt if s.label == y[k]))
@@ -112,6 +116,6 @@ class Symbol:
 	def print_firsts(self):
 		print(str(self.first))
 
-grammar = "S1->S1 a|b B|c B|A d|&\nA->B B A w|h|&\nB->f|&"
+grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 cfg = ContextFreeGrammar(grammar)
 cfg.print_stuff()
