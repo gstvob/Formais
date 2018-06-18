@@ -29,7 +29,7 @@ class ContextFreeGrammar:
 			if p not in [ss.label for ss in symbols]:
 				symbols.append(Symbol(p))
 		for s in symbols:
-			if s.label.islower() or s.label.isdigit() or s.label == "&":
+			if not s.isupper():
 				self.vt.add(s)
 			else:
 				self.vn.add(s)
@@ -43,8 +43,10 @@ class ContextFreeGrammar:
 		vn = self.vn
 		vt = self.vt
 
+		#passo1
 		if X in vt:
 			X.first.add(X)
+		#passo2
 		else:
 			prods = p.split("\n")
 			that_prod = next(p for p in prods if (p.split("->")[0]) == X.label)
@@ -55,14 +57,9 @@ class ContextFreeGrammar:
 						symbol = next(s for s in vt if s.label == that_prod[x])
 						X.first.add(symbol)
 
-
-			#aqui o first do A é {&,h}
-			# se X->S1 S2 S3
-			# first(S1) ta em X
-			# se epsilon ta em S1, first(S2) ta em X e assim vai
-
 			splitemup = that_prod.split("|")
 
+			#passo3
 			for x in splitemup:
 				y = x.split(" ")
 				previousHadEpsilon=True
