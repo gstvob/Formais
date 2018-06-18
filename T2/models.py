@@ -35,11 +35,13 @@ class ContextFreeGrammar:
 				self.vn.add(s)
 
 		self.S = symbols[0]
+		self.set_firsts(self.S)
+
 
 	def set_firsts(self, X, Prev=None):
-		p = cfg.productions
-		vn = cfg.vn
-		vt = cfg.vt
+		p = self.productions
+		vn = self.vn
+		vt = self.vt
 
 		if X in vt:
 			X.first.add(X)
@@ -88,7 +90,6 @@ class ContextFreeGrammar:
 					X.first.add(next(s for s in vt if s.label == "&"))
 
 			#DEAL WITH DEPENDENCES
-
 
 	def set_follows(self):
 		p = self.productions
@@ -149,6 +150,35 @@ class ContextFreeGrammar:
 									break
 								elif "&" in [k.label for k in vt if k.label == "&"]:
 									bN+=1
+
+	def set_first_nt(self, X):
+		p = self.productions
+		vn = self.vn
+		vt = self.vt
+
+		if X not in vt:
+
+			prods = p.split("\n")
+			that_prod = next(p for p in prods if (p.split("->")[0]) == X.label)
+			that_prod = that_prod.split("->")[1]
+			splitemup = that_prod.split("|")
+			for x in splitemup:
+				y = x.split(" ")
+				previousHadEpsilon=True
+				addedTerminal = False
+				for k in range(len(y)):
+					if y[k] in [z.label for z in vn]:
+						yn = next(symbol for symbol in vn if symbol.label == y[k])
+						if previousHadEpsilon:
+							X.first_nt.add(yn)
+							if [symbol for symbol in yn.first if symbol.label == "&"]:
+								previousHadEpsilon = True
+							else:
+								previousHadEpsilon = False
+					else:
+						break
+
+
 	def print_stuff(self):
 		print(str(self.vn))
 		print(str(self.vt))
@@ -161,6 +191,7 @@ class Symbol:
 		self.label = label
 		self.first = set()
 		self.follow = set()
+		self.first_nt = set()
 		self.dependences = []
 
 	def __repr__(self):
@@ -176,12 +207,18 @@ grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
 
 cfg = ContextFreeGrammar(grammar)
-cfg.print_stuff()
+for i in cfg.vn:
+	cfg.set_first_nt(i)
 cfg.set_follows()
+for i in cfg.vn:
+	print(str(i)+" first")
+	print(i.first)
 for i in cfg.vn:
 	print(str(i)+" follow")
 	print(i.follow)
-
+for i in cfg.vn:
+	print(str(i)+" first_nt")
+	print(i.first_nt)
 '''
 							if yn == Prev and yn != X:
 								print(Prev)
