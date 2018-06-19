@@ -1,3 +1,4 @@
+import re
 class ContextFreeGrammar:
 	
 	def __init__(self, productions):
@@ -29,7 +30,7 @@ class ContextFreeGrammar:
 			if p not in [ss.label for ss in symbols]:
 				symbols.append(Symbol(p))
 		for s in symbols:
-			if not s.isupper():
+			if not s.label.isupper() and len(s.label) <2:
 				self.vt.add(s)
 			else:
 				self.vn.add(s)
@@ -124,29 +125,36 @@ class ContextFreeGrammar:
 							break
 
 		#passo3
-		for P in prods:
-			A_label = P.split("->")[0]
-			C = P.split("->")[1]
-			C = C.split("|")
-			for c in C:
-				x = c.split(" ")
-				for i in range(len(x)):
-					if x[i] not in [k.label for k in vn]:
-						continue
-					else:
-						B = next(symbol for symbol in vn if x[i] == symbol.label)
-						bN = i+1
-						while True:
-							if bN == len(x):
-								A = next(y for y in vn if y.label == A_label)
-								B.follow.update(A.follow)
-								break
-							else:
-								beta = next((symbol for symbol in vn if x[bN] == symbol.label), None)
-								if beta == None:
+		repeat = True
+		while repeat:
+			repeat = False
+			previous = []
+			for P in prods:
+				A_label = P.split("->")[0]
+				C = P.split("->")[1]
+				C = C.split("|")
+				for c in C:
+					x = c.split(" ")
+					for i in range(len(x)):
+						if x[i] not in [k.label for k in vn]:
+							continue
+						else:
+							B = next(symbol for symbol in vn if x[i] == symbol.label)
+							bN = i+1
+							while True:
+								if bN == len(x):
+									A = next(y for y in vn if y.label == A_label)
+									B.follow.update(A.follow)
+									if B in previous and B.label not in [prev.label for prev in previous]:
+										repeat = True
+									previous.append(A_label)
 									break
-								elif "&" in [k.label for k in vt if k.label == "&"]:
-									bN+=1
+								else:
+									beta = next((symbol for symbol in vn if x[bN] == symbol.label), None)
+									if beta == None:
+										break
+									elif "&" in [k.label for k in vt if k.label == "&"]:
+										bN+=1
 
 	def set_first_nt(self, X):
 		p = self.productions
@@ -175,6 +183,44 @@ class ContextFreeGrammar:
 					else:
 						break
 
+	def remove_useless_symbols(self):
+		self.productions = self.remove_dead_symbols()
+		self.remove_unreachable_symbols()
+	
+	def remove_dead_symbols(self):
+		Nf = set()
+		Nprev = set()
+		while True:
+			Ni = set()
+			for p in self.productions:
+				A_label = p.split("->")[0]
+				rhs = p.split("->")[1]
+				for s in range(len(rhs)):
+					if rhs[s] in [l.label for l in vt]:
+						x = s:
+						alive = False
+						while True:
+							if x+1>= len(rhs) or rhs[x+1] == "|":
+								alive = True
+								break
+							elif rhs[x+1] in [l.label for l in vn]:
+								B = next(symbol for symbol in vn if rhs[x+1] == symbol.label)
+								if B not in Nprev:
+									alive = False
+									break
+								else:
+									x+=1
+						if alive:
+							A = next(symbol for symbol in vn if symbol.label == A_label)
+							Ni.add(Ni)
+			Ni = Nprev.union(Ni)
+			if Ni == Nprev:
+				break
+			else:
+				Nprev = Ni
+		Nf = Nprev
+
+	# def remove_unreachable_symbols(self):
 
 	def print_stuff(self):
 		print(str(self.vn))
@@ -202,8 +248,9 @@ class Symbol:
 
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
+grammar3 = "S->b B|A\nA->b S\nB->a"
 
-cfg = ContextFreeGrammar(grammar)
+cfg = ContextFreeGrammar(grammar3)
 for i in cfg.vn:
 	cfg.set_first_nt(i)
 cfg.set_follows()
