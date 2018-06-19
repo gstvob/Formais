@@ -184,8 +184,25 @@ class ContextFreeGrammar:
 						break
 
 	def remove_useless_symbols(self):
-		self.productions = self.remove_dead_symbols()
-		self.remove_unreachable_symbols()
+		nf = self.remove_dead_symbols()
+		self.vn = self.vn&nf
+		#redefenir prods
+
+		prods = self.productions.split("\n")
+		for p in prods:
+			nT = p.split("->")[0]
+			if nT not in [l.label for l in vn]:
+				prods.remove(p)
+
+		self.productions = "\n".join(prods) 
+
+		for p in self.productions:
+				A_label = p.split("->")[0]
+				rhs = p.split("->")[1]
+				for s in range(len(rhs)):
+					if rhs[s] not in [l.label for l in vn]:
+						self.productions.replace(rhs[s], "")
+		# remove_unreachable_symbols()
 	
 	def remove_dead_symbols(self):
 		Nf = set()
@@ -219,6 +236,7 @@ class ContextFreeGrammar:
 			else:
 				Nprev = Ni
 		Nf = Nprev
+		return Nf
 
 	# def remove_unreachable_symbols(self):
 
