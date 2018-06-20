@@ -79,12 +79,13 @@ class ContextFreeGrammar:
 								previousHadEpsilon=True
 							else:
 								previousHadEpsilon=False
-
+								break
 					elif y[k] in [s.label for s in vt]:
 						if previousHadEpsilon: 
 							X.first.add(next(s for s in vt if s.label == y[k]))
 							addedTerminal=True
-				if not addedTerminal:
+							break
+				if not addedTerminal and previousHadEpsilon:
 					X.first.add(next(s for s in vt if s.label == "&"))
 
 			#DEAL WITH DEPENDENCES
@@ -108,7 +109,6 @@ class ContextFreeGrammar:
 						continue
 					else:
 						B = next(symbol for symbol in vn if x[i] == symbol.label)
-						epsilon = next(symbol for symbol in vt if symbol.label == "&")
 						if i+1 >= len(x):
 							break 
 						
@@ -119,6 +119,7 @@ class ContextFreeGrammar:
 							B.follow.update(beta.first)
 							if epsilon not in beta.first:
 								break
+							epsilon = next(symbol for symbol in vt if symbol.label == "&")
 							B.follow.remove(epsilon)
 						else:
 							B.follow.add(next(symbol for symbol in vt if x[i+1] == symbol.label))
@@ -142,19 +143,20 @@ class ContextFreeGrammar:
 							B = next(symbol for symbol in vn if x[i] == symbol.label)
 							bN = i+1
 							while True:
-								if bN == len(x):
+								if bN >= len(x):
 									A = next(y for y in vn if y.label == A_label)
 									B.follow.update(A.follow)
-									if B in previous and B.label not in [prev.label for prev in previous]:
+									if B.label in [prev for prev in previous] and B.follow-A.follow != B.follow:
 										repeat = True
 									previous.append(A_label)
 									break
 								else:
 									beta = next((symbol for symbol in vn if x[bN] == symbol.label), None)
-									if beta == None:
-										break
-									elif "&" in [k.label for k in vt if k.label == "&"]:
+									if "&" in [k.label for k in vt if k.label == "&"]:
 										bN+=1
+									else:
+										break
+									break
 
 	def set_first_nt(self, X):
 		p = self.productions
@@ -214,7 +216,7 @@ class ContextFreeGrammar:
 				rhs = p.split("->")[1]
 				for s in range(len(rhs)):
 					if rhs[s] in [l.label for l in vt]:
-						x = s:
+						x = s
 						alive = False
 						while True:
 							if x+1>= len(rhs) or rhs[x+1] == "|":
@@ -266,7 +268,7 @@ class Symbol:
 
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
-grammar3 = "S->b B|A\nA->b S\nB->a"
+grammar3 = "S->b B|A a\nA->b S|&\nB->a"
 
 cfg = ContextFreeGrammar(grammar3)
 for i in cfg.vn:
@@ -274,6 +276,7 @@ for i in cfg.vn:
 cfg.set_follows()
 for i in cfg.vn:
 	print(str(i)+" first")
+	cfg.set_firsts(i)
 	print(i.first)
 for i in cfg.vn:
 	print(str(i)+" follow")
