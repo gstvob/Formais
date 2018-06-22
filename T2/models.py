@@ -1,187 +1,117 @@
 import re
+
+
 class ContextFreeGrammar:
 	
 	def __init__(self, productions):
-		self.productions = productions
+		self.p_string = productions
+		self.productions = []
 		self.vn = set()
 		self.vt = set()
 		self.S = None
 		self.decompose_and_formalize()
+	
+	#método terrível, se me pergutarem não fui eu que fiz.
 	def decompose_and_formalize(self):
-		symbols = []
-		prods = self.productions.split("\n")
+		prods = self.p_string.split("\n")
+
 		for p in prods:
-			symbol = p.split("->")[0]
-			if symbol not in [ss.label for ss in symbols]:
-				print(symbol)
-				symbols.append(Symbol(symbol))
+			x = p.split("->")
+			lhs = Symbol(x[0])
+			self.vn.add(lhs)
 
-		prod = self.productions
+		for p in prods:
+			lhs = p.split("->")
+			lhs = next(symbol for symbol in self.vn if symbol.label == lhs[0])
+			x = p.split("->")[1].split("|")
+			for s in x:
+				rhs = []
+				y = s.split(" ")
+				for l in y:
+					if len(l)<2 and not(l.isupper()):
+						k = next((symbol for symbol in self.vt if symbol.label == l), Symbol(l))
+						self.vt.add(k)
+						rhs.append(k)
+					else:
+						k = next(symbol for symbol in self.vn if symbol.label == l)
+						rhs.append(k)
+				self.productions.append(Production(lhs, rhs))
+		self.S = self.productions[0].lhs
+		print(self.productions)
+		self.set_firsts()
+		self.set_follows()
+		self.set_first_nt()
 
-		for S in symbols:
-			prod=prod.replace(S.label, "")
-
-		prod = prod.replace("\n", ",")
-		prod = prod.replace("->","")
-		prod = prod.replace("|", ",")
-		prod = prod.replace(" ", "")
-		prod = prod.split(",")
-		for p in prod:
-			if p not in [ss.label for ss in symbols]:
-				symbols.append(Symbol(p))
-		for s in symbols:
-			if not s.label.isupper() and len(s.label) <2:
-				self.vt.add(s)
-			else:
-				self.vn.add(s)
-
-		self.S = symbols[0]
-		self.set_firsts(self.S)
-
-
-	def set_firsts(self, X, Prev=None):
-		p = self.productions
-		vn = self.vn
-		vt = self.vt
-
+	def set_firsts(self):
+		
 		#passo1
-		if X in vt:
-			X.first.add(X)
-		#passo2
-		else:
-			prods = p.split("\n")
-			that_prod = next(p for p in prods if (p.split("->")[0]) == X.label)
-			that_prod = that_prod.split("->")[1]
-			for x in range(len(that_prod)):
-				if that_prod[x] in [y.label for y in vt]: 
-					if x-1 == -1 or that_prod[(x-1)] == "|":
-						symbol = next(s for s in vt if s.label == that_prod[x])
-						X.first.add(symbol)
-
-			splitemup = that_prod.split("|")
-
-			#passo3
-			for x in splitemup:
-				y = x.split(" ")
-				previousHadEpsilon=True
-				addedTerminal = False
-				for k in range(len(y)):
-					if y[k] in [z.label for z in vn]:
-						yn = next(s for s in vn if s.label == y[k])
-						if previousHadEpsilon:
-							if y[k] != X.label:
-								self.set_firsts(yn, X)
-								X.first.update(yn.first)
-							if "&" in [l.label for l in yn.first]:
-								epsilon = next(s for s in yn.first if s.label == "&")
-								if "&" not in that_prod:
-									X.first.remove(epsilon)
-								previousHadEpsilon=True
-							else:
-								previousHadEpsilon=False
-								break
-					elif y[k] in [s.label for s in vt]:
-						if previousHadEpsilon: 
-							X.first.add(next(s for s in vt if s.label == y[k]))
-							addedTerminal=True
-							break
-				if not addedTerminal and previousHadEpsilon:
-					X.first.add(next(s for s in vt if s.label == "&"))
-
-			#DEAL WITH DEPENDENCES
+		for terminal in self.vt:
+			terminal.first.add(terminal)
+		for non_terminal in self.vn:
+			non_terminal.calculate_first(self.productions, self.vn, self.vt)
 
 	def set_follows(self):
-		p = self.productions
-		vn = self.vn
-		vt = self.vt
-		#passo 1
+		
+		#passo1
 		self.S.follow.add(Symbol("$"))
-
 		#passo2
-		prods = p.split("\n")
-		for P in prods:
-			A = P.split("->")[1]
-			A = A.split("|")
-			for a in A:
-				x = a.split(" ")
-				for i in range(len(x)):
-					if x[i] not in [k.label for k in vn]:
-						continue
-					else:
-						B = next(symbol for symbol in vn if x[i] == symbol.label)
-						if i+1 >= len(x):
-							break 
-						
-						if x[i+1] in [k.label for k in vn]:
-							beta = next(symbol for symbol in vn if x[i+1] == symbol.label)
-							print(str(beta))
-							print(str(beta.first))
-							B.follow.update(beta.first)
-							if epsilon not in beta.first:
-								break
-							epsilon = next(symbol for symbol in vt if symbol.label == "&")
-							B.follow.remove(epsilon)
-						else:
-							B.follow.add(next(symbol for symbol in vt if x[i+1] == symbol.label))
+		epsilon = next((symbol for symbol in self.vt if symbol.label == "&"), None)
+		for prods in self.productions:
+			for x in range(len(prods.rhs)):
+				if prods.rhs[x] in self.vt:
+					continue
+				else:
+					i = x
+					while True:
+						if i+1 >= len(prods.rhs):
 							break
-
-		#passo3
-		repeat = True
-		while repeat:
-			repeat = False
-			previous = []
-			for P in prods:
-				A_label = P.split("->")[0]
-				C = P.split("->")[1]
-				C = C.split("|")
-				for c in C:
-					x = c.split(" ")
-					for i in range(len(x)):
-						if x[i] not in [k.label for k in vn]:
-							continue
+						elif prods.rhs[i+1] in self.vt:
+							prods.rhs[i].follow.add(prods.rhs[i+1])
+							break
 						else:
-							B = next(symbol for symbol in vn if x[i] == symbol.label)
-							bN = i+1
-							while True:
-								if bN >= len(x):
-									A = next(y for y in vn if y.label == A_label)
-									B.follow.update(A.follow)
-									if B.label in [prev for prev in previous] and B.follow-A.follow != B.follow:
-										repeat = True
-									previous.append(A_label)
-									break
-								else:
-									beta = next((symbol for symbol in vn if x[bN] == symbol.label), None)
-									if "&" in [k.label for k in vt if k.label == "&"]:
-										bN+=1
-									else:
-										break
-									break
-
-	def set_first_nt(self, X):
-		p = self.productions
-		vn = self.vn
-		vt = self.vt
-
-		if X not in vt:
-
-			prods = p.split("\n")
-			that_prod = next(p for p in prods if (p.split("->")[0]) == X.label)
-			that_prod = that_prod.split("->")[1]
-			splitemup = that_prod.split("|")
-			for x in splitemup:
-				y = x.split(" ")
-				previousHadEpsilon=True
-				addedTerminal = False
-				for k in range(len(y)):
-					if y[k] in [z.label for z in vn]:
-						yn = next(symbol for symbol in vn if symbol.label == y[k])
-						if previousHadEpsilon:
-							X.first_nt.add(yn)
-							if [symbol for symbol in yn.first if symbol.label == "&"]:
-								previousHadEpsilon = True
+							prods.rhs[i].follow.update(prods.rhs[i+1].first-{epsilon})
+							if prods.rhs[i+1].has_epsilon_in_first():
+								i+=1
 							else:
-								previousHadEpsilon = False
+								break
+
+		changed = True
+		while changed:
+			changed = False
+			for prods in self.productions:
+				for x in range(len(prods.rhs)):
+					i = x+1
+					hasToAdd = False
+					if prods.rhs[x] not in self.vt:
+						while True:
+							if i >= len(prods.rhs):
+								hasToAdd = True
+								break
+							elif prods.rhs[i].has_epsilon_in_first():
+								i+=1
+							else:
+								hasToAdd = False
+								break
+					if hasToAdd:
+						before = prods.rhs[x].follow
+						prods.rhs[x].follow.update(prods.lhs.follow)
+						if len(before) != len(prods.rhs[x].follow):
+							changed = True
+
+	def set_first_nt(self):
+		
+		for prods in self.productions:
+			x = 0
+			while True:
+				if x >= len(prods.rhs):
+					break
+				else:	
+					if prods.rhs[x] not in self.vt:
+						prods.lhs.first_nt.add(prods.rhs[x])
+						if prods.rhs[x].has_epsilon_in_first():
+							x+=1
+						else:
+							break
 					else:
 						break
 
@@ -242,12 +172,15 @@ class ContextFreeGrammar:
 
 	# def remove_unreachable_symbols(self):
 
-	def print_stuff(self):
-		print(str(self.vn))
-		print(str(self.vt))
-		print("Inicial: "+str(self.S))
-		self.set_firsts(self.S)
-		self.S.print_firsts()
+
+
+class Production:
+	def __init__(self, lhs, rhs):
+		self.lhs = lhs
+		self.rhs = rhs
+
+	def __repr__(self):
+		return str(self.lhs)+"->"+str(self.rhs)
 
 class Symbol:
 	def __init__(self, label):
@@ -260,6 +193,30 @@ class Symbol:
 	def __repr__(self):
 		return self.label
 
+	def has_epsilon_in_first(self):
+		return "&" in [x.label for x in self.first]
+	def calculate_first(self, productions, vn, vt):
+		myprods = [prod for prod in productions if prod.lhs.label == self.label]
+		for prod in myprods:
+			if prod.rhs[0] in vt:
+				self.first.add(prod.rhs[0])
+
+		epsilon = next((symbol for symbol in vt if symbol.label == "&"), None)
+		for prod in myprods:
+			previousHadEpsilon = True
+			for x in range(len(prod.rhs)):
+				if previousHadEpsilon:
+					if prod.rhs[x] not in vt:
+						if prod.rhs[x].label != self.label:
+							prod.rhs[x].calculate_first(productions, vn, vt)
+							self.first.update(prod.rhs[x].first-{epsilon})
+						if prod.rhs[x].has_epsilon_in_first():
+							previousHadEpsilon = True
+						else:
+							previousHadEpsilon = False
+					else:
+						self.first.update(prod.rhs[x].first)
+						break
 	def add_dependence(self, symbol):
 		self.dependences.append(symbol)
 
@@ -271,19 +228,18 @@ grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
 grammar3 = "S->b B|A a\nA->b S|&\nB->a"
 
 cfg = ContextFreeGrammar(grammar3)
+# for i in cfg.vn:
+# 	cfg.set_first_nt(i)
+# cfg.set_follows()
 for i in cfg.vn:
-	cfg.set_first_nt(i)
-cfg.set_follows()
+ 	print(str(i)+" first")
+ 	print(i.first)
 for i in cfg.vn:
-	print(str(i)+" first")
-	cfg.set_firsts(i)
-	print(i.first)
+ 	print(str(i)+" follow")
+ 	print(i.follow)
 for i in cfg.vn:
-	print(str(i)+" follow")
-	print(i.follow)
-for i in cfg.vn:
-	print(str(i)+" first_nt")
-	print(i.first_nt)
+ 	print(str(i)+" first_nt")
+ 	print(i.first_nt)
 '''
 							if yn == Prev and yn != X:
 								print(Prev)
