@@ -14,7 +14,6 @@ class ContextFreeGrammar:
 	#método terrível, se me pergutarem não fui eu que fiz.
 	def decompose_and_formalize(self):
 		prods = self.p_string.split("\n")
-
 		for p in prods:
 			x = p.split("->")
 			lhs = Symbol(x[0])
@@ -119,59 +118,116 @@ class ContextFreeGrammar:
 		nf = self.remove_dead_symbols()
 		self.vn = self.vn&nf
 		#redefenir prods
+		if self.S not in self.vn:
+			self.productions = []
+			self.p_string = "VAZIO"
+			print("VAZIO")
+		else:
+			self.redefine_productions()
+			self.productions = []
+			self.decompose_and_formalize()
+			vf = self.remove_unreachable_symbols()
+			self.vn = self.vn&vf
+			self.vt = self.vt&vf
+			self.redefine_productions()
+			self.productions = []
+			self.decompose_and_formalize()
 
-		prods = self.productions.split("\n")
-		for p in prods:
-			nT = p.split("->")[0]
-			if nT not in [l.label for l in vn]:
-				prods.remove(p)
 
-		self.productions = "\n".join(prods) 
-
-		for p in self.productions:
-				A_label = p.split("->")[0]
-				rhs = p.split("->")[1]
-				for s in range(len(rhs)):
-					if rhs[s] not in [l.label for l in vn]:
-						self.productions.replace(rhs[s], "")
-		# remove_unreachable_symbols()
-	
 	def remove_dead_symbols(self):
 		Nf = set()
 		Nprev = set()
 		while True:
 			Ni = set()
-			for p in self.productions:
-				A_label = p.split("->")[0]
-				rhs = p.split("->")[1]
-				for s in range(len(rhs)):
-					if rhs[s] in [l.label for l in vt]:
-						x = s
-						alive = False
-						while True:
-							if x+1>= len(rhs) or rhs[x+1] == "|":
-								alive = True
-								break
-							elif rhs[x+1] in [l.label for l in vn]:
-								B = next(symbol for symbol in vn if rhs[x+1] == symbol.label)
-								if B not in Nprev:
-									alive = False
-									break
-								else:
-									x+=1
-						if alive:
-							A = next(symbol for symbol in vn if symbol.label == A_label)
-							Ni.add(Ni)
+			for prods in self.productions:
+				A = prods.lhs
+				if prods.rhs[0] in self.vt or prods.rhs[0] in Nprev:
+					x = 1
+					while True:
+						if x >= len(prods.rhs):
+							Ni.add(prods.lhs)
+							break
+						elif prods.rhs[x] in self.vt or prods.rhs[x] in Nprev:
+							x+=1
+						else:
+							break
 			Ni = Nprev.union(Ni)
 			if Ni == Nprev:
 				break
 			else:
 				Nprev = Ni
 		Nf = Nprev
+		print(Nf)
 		return Nf
 
-	# def remove_unreachable_symbols(self):
+	def remove_unreachable_symbols(self):
+		Vf = set()
+		Vprev = {self.S}
+		while True:
+			Vi = set()
+			for prods in self.productions:
+				A = prods.lhs
+				if A in Vprev:
+					for rhs in prods.rhs:
+						Vi.add(rhs)
+				else:
+					continue
+			if Vi == Vprev:
+				break
+			else:
+				Vprev = Vi
+		Vf = Vprev
+		print(Vf)
+		return Vf
 
+	def into_epsilon_free(self):
+		Ne = set()
+		Nprev = set()
+		epsilon = next(symbol for symbol in self.vt if symbol.label == "&")
+		while True:
+			Ni = set()
+			for prods in self.productions:
+				A = prods.lhs
+				if prods.rhs[0] == epsilon or prods.rhs[0] in Nprev:
+					x = 1
+					while True:
+						if x >= len(prods.rhs):
+							Ni.add(prods.lhs)
+							break
+						elif prods.rhs[x] in Nprev:
+							x+=1
+						else:
+							break
+			Ni = Nprev.union(Ni)
+			if Ni == Nprev:
+				break
+			else:
+				Nprev = Ni
+		Ne = Nprev
+		
+		for prod in self.productions:
+			if prod.rhs[0] == epsilon:
+				self.productions.remove(prod)
+		
+
+	def redefine_productions(self):
+		prods = self.p_string.split("\n")
+		for p in prods:
+			nT = p.split("->")[0]
+			if nT not in [l.label for l in self.vn]:
+				prods.remove(p)
+
+		self.p_string = "\n".join(prods) 
+		for p in self.p_string.split("\n"):
+				A_label = p.split("->")[0]
+				rhs = p.split("->")[1]
+				for s in range(len(rhs)):
+					if rhs[s] != "|" and rhs[s] != " ":
+						if rhs[s] not in [l.label for l in self.vt] and rhs[s] not in [l.label for l in self.vn]:
+							print(rhs[s])
+							self.p_string = self.p_string.replace(rhs[s], "")
+							self.p_string = self.p_string.replace("| ", "|")
+							self.p_string = self.p_string.replace(" |", "|")
 
 
 class Production:
@@ -226,20 +282,21 @@ class Symbol:
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
 grammar3 = "S->b B|A a\nA->b S|&\nB->a"
-
-cfg = ContextFreeGrammar(grammar3)
+grammar4 = "S->a S|B C|B D\nA->c C|A B\nB->b B|&\nC->a A|B C\nD->d D d|c"
+cfg = ContextFreeGrammar(grammar)
 # for i in cfg.vn:
 # 	cfg.set_first_nt(i)
 # cfg.set_follows()
-for i in cfg.vn:
- 	print(str(i)+" first")
- 	print(i.first)
-for i in cfg.vn:
- 	print(str(i)+" follow")
- 	print(i.follow)
-for i in cfg.vn:
- 	print(str(i)+" first_nt")
- 	print(i.first_nt)
+# for i in cfg.vn:
+#  	print(str(i)+" first")
+#  	print(i.first)
+# for i in cfg.vn:
+#  	print(str(i)+" follow")
+#  	print(i.follow)
+# for i in cfg.vn:
+#  	print(str(i)+" first_nt")
+#  	print(i.first_nt)
+cfg.into_epsilon_free()
 '''
 							if yn == Prev and yn != X:
 								print(Prev)
