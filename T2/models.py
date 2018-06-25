@@ -3,9 +3,9 @@ import re
 
 class ContextFreeGrammar:
 	
-	FINITE = "finite"
-	INFINITE = "infinite"
-	EMPTY = "empty"
+	FINITE = "Finita"
+	INFINITE = "Infinita"
+	EMPTY = "Vazia"
 
 	def __init__(self, name, productions):
 		self.name = name
@@ -369,7 +369,7 @@ class Symbol:
 					if rhs.label != self.label:
 						rhs.calculate_nt_reachables(productions, vn)
 						self.nt_reachables.update(rhs.nt_reachables)
-
+'''
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
 grammar3 = "S->b B|A a\nA->b S|B a|&\nB->a"
@@ -395,3 +395,4 @@ for i in cfg.vn:
 	print(i.first_nt)
 
 print(cfg.finiteness())
+'''

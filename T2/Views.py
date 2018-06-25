@@ -1,6 +1,6 @@
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout, QTableWidget, QTableWidgetItem
-
+from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout, QTableWidget, QTableWidgetItem, QLabel
+from models import *
 '''
 
 AUTOR : GUSTAVO BORGES FRANÇA.
@@ -36,3 +36,11 @@ class View(QWidget):
 		self.view.clear()
 		grammar = next(x for x in self.grammars if x.name == name)
 		self.view.textCursor().insertText(grammar.p_string)
+		font = QtGui.QFont()
+		font.setBold(True)
+		finiteness = QLabel(self)
+		finiteness.setFont(font)
+		rep_g = grammar
+		text = rep_g.finiteness()
+		finiteness.setText(text)
+		self.grid.addWidget(finiteness, 1, 1)
