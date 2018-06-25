@@ -3,7 +3,12 @@ import re
 
 class ContextFreeGrammar:
 	
-	def __init__(self, productions):
+	FINITE = "finite"
+	INFINITE = "infinite"
+	EMPTY = "empty"
+
+	def __init__(self, name, productions):
+		self.name = name
 		self.p_string = productions
 		self.productions = []
 		self.vn = set()
@@ -11,6 +16,38 @@ class ContextFreeGrammar:
 		self.S = None
 		self.decompose_and_formalize()
 	
+	##not working
+	def parse_cfg(self):
+		
+		regex = re.compile(r'([A-Z][0-9]?->(([a-z] |[0-9] )*([A-Z][0-9]? )*([a-z]| [0-9])*|[&])([|]([a-z] |[0-9] )*([A-Z][0-9]?)*( [a-z]| [0-9])*|[&])*(\n|\Z))*')
+		match = regex.match(self.p_string)
+		print(match.group())
+		try:
+			if (match.group() == self.p_string):
+				return True
+			else:
+				return False
+		except AttributeError:
+			return False
+
+
+	def finiteness(self):
+		self.remove_useless_symbols()
+		if self.p_string == "VAZIO":
+			return self.EMPTY
+		elif self.isInfinite():
+			return self.INFINITE
+		else:
+			return self.FINITE
+
+
+	def isInfinite(self):
+		for i in self.vn:
+			i.calculate_nt_reachables(self.productions, self.vn)
+			if i in i.nt_reachables:
+				return True
+		return False
+
 	#método terrível, se me pergutarem não fui eu que fiz.
 	def decompose_and_formalize(self):
 		prods = self.p_string.split("\n")
@@ -36,7 +73,6 @@ class ContextFreeGrammar:
 						rhs.append(k)
 				self.productions.append(Production(lhs, rhs))
 		self.S = self.productions[0].lhs
-		print(self.productions)
 		self.set_firsts()
 		self.set_follows()
 		self.set_first_nt()
@@ -98,40 +134,23 @@ class ContextFreeGrammar:
 							changed = True
 
 	def set_first_nt(self):
-		
-		for prods in self.productions:
-			x = 0
-			while True:
-				if x >= len(prods.rhs):
-					break
-				else:	
-					if prods.rhs[x] not in self.vt:
-						prods.lhs.first_nt.add(prods.rhs[x])
-						if prods.rhs[x].has_epsilon_in_first():
-							x+=1
-						else:
-							break
-					else:
-						break
+		for nt in self.vn:
+			nt.calculate_first_nt(self.productions, self.vn)
 
 	def remove_useless_symbols(self):
 		nf = self.remove_dead_symbols()
-		self.vn = self.vn&nf
+		self.vn = self.vn.intersection(nf)
 		#redefenir prods
 		if self.S not in self.vn:
 			self.productions = []
 			self.p_string = "VAZIO"
-			print("VAZIO")
 		else:
 			self.redefine_productions()
-			self.productions = []
-			self.decompose_and_formalize()
 			vf = self.remove_unreachable_symbols()
 			self.vn = self.vn&vf
 			self.vt = self.vt&vf
 			self.redefine_productions()
-			self.productions = []
-			self.decompose_and_formalize()
+			print(self.productions)
 
 
 	def remove_dead_symbols(self):
@@ -157,7 +176,6 @@ class ContextFreeGrammar:
 			else:
 				Nprev = Ni
 		Nf = Nprev
-		print(Nf)
 		return Nf
 
 	def remove_unreachable_symbols(self):
@@ -166,18 +184,16 @@ class ContextFreeGrammar:
 		while True:
 			Vi = set()
 			for prods in self.productions:
-				A = prods.lhs
-				if A in Vprev:
-					for rhs in prods.rhs:
-						Vi.add(rhs)
+				if prods.lhs in Vprev:
+						Vi.update(prods.rhs)
 				else:
 					continue
+			Vi = Vprev.union(Vi)
 			if Vi == Vprev:
 				break
 			else:
 				Vprev = Vi
 		Vf = Vprev
-		print(Vf)
 		return Vf
 
 	def into_epsilon_free(self):
@@ -205,38 +221,80 @@ class ContextFreeGrammar:
 				Nprev = Ni
 		Ne = Nprev
 		
+		e_freeProds = [r for r in self.productions]
 		for prod in self.productions:
 			if prod.rhs[0] == epsilon:
+				e_freeProds.remove(prod)
+		for prod in self.productions:
+			x = 0
+			removals = []
+			while x < len(prod.rhs):
+				if prod.rhs[x] in Ne and (x-1==-1 or prod.rhs[x] not in self.vt):
+					removals.append(prod.rhs[x])
+					for i in removals:
+						newRhs = [r for r in prod.rhs]
+						del newRhs[newRhs.index(i)]
+						newP = Production(prod.lhs, newRhs)
+						if newP not in e_freeProds:
+							e_freeProds.append(newP)
+				x+=1
+		print(e_freeProds)
+		print(self.productions)
+
+	def remove_simple_productions(self):
+		for prod in self.productions:
+			prod.lhs.calculate_simple_productions(self.productions, self.vn)
+		for prod in self.productions:
+			if len(prod.rhs) == 1 and prod.rhs[0] in self.vn:
 				self.productions.remove(prod)
-		
+				for s in prod.lhs.simple:
+					non_simple = [p.rhs for p in self.productions if p.lhs == s]
+					for p in non_simple:
+						if len(p) == 1 and p[0] in self.vn:
+							continue
+						else:
+							new_prod = Production(prod.lhs, p)
+							self.productions.append(new_prod)
+		self.stringify_productions()
 
+	def stringify_productions(self):
+		productions = []
+		for nt in self.vn:
+			prods_per_nt = [prod for prod in self.productions if prod.lhs == nt]
+			string = nt.label+"->"
+			for p in prods_per_nt:
+				for rhs in p.rhs:
+					string+=rhs.label+" "
+				string += "|"
+			string = string.replace(" |", "|")
+			string = string.replace("| ", "|")
+			string = string[:-1]
+			productions.append(string)
+		productions = list(reversed(productions))
+		for p in productions:
+			if p.split("->")[0] == self.S.label:
+				self.p_string = p+"\n"
+				productions.remove(p)
+		self.p_string += "\n".join(productions)
+	
 	def redefine_productions(self):
-		prods = self.p_string.split("\n")
-		for p in prods:
-			nT = p.split("->")[0]
-			if nT not in [l.label for l in self.vn]:
-				prods.remove(p)
 
-		self.p_string = "\n".join(prods) 
-		for p in self.p_string.split("\n"):
-				A_label = p.split("->")[0]
-				rhs = p.split("->")[1]
-				for s in range(len(rhs)):
-					if rhs[s] != "|" and rhs[s] != " ":
-						if rhs[s] not in [l.label for l in self.vt] and rhs[s] not in [l.label for l in self.vn]:
-							print(rhs[s])
-							self.p_string = self.p_string.replace(rhs[s], "")
-							self.p_string = self.p_string.replace("| ", "|")
-							self.p_string = self.p_string.replace(" |", "|")
-
-
+		for p in self.productions:
+			if p.lhs not in self.vn:
+				self.productions.remove(p)
+			for r in p.rhs:
+				if r not in self.vn and r not in self.vt:
+					p.rhs.remove(r)
+		self.stringify_productions()
 class Production:
 	def __init__(self, lhs, rhs):
 		self.lhs = lhs
 		self.rhs = rhs
-
 	def __repr__(self):
 		return str(self.lhs)+"->"+str(self.rhs)
+
+	def __eq__(self, other):
+		return self.rhs == other.rhs
 
 class Symbol:
 	def __init__(self, label):
@@ -245,12 +303,22 @@ class Symbol:
 		self.follow = set()
 		self.first_nt = set()
 		self.dependences = []
-
+		self.simple = set()
+		self.nt_reachables = set()
 	def __repr__(self):
 		return self.label
 
 	def has_epsilon_in_first(self):
 		return "&" in [x.label for x in self.first]
+	def calculate_simple_productions(self, productions, vn):
+		all_prods_nt = [p for p in productions if p.lhs.label == self.label]
+		for p in all_prods_nt:
+			if len(p.rhs) == 1 and p.rhs[0] in vn:
+				self.simple.add(p.rhs[0])
+				p.rhs[0].calculate_simple_productions(productions, vn)
+				if len(p.rhs[0].simple) > 0:
+					self.simple.update(p.rhs[0].simple)
+
 	def calculate_first(self, productions, vn, vt):
 		myprods = [prod for prod in productions if prod.lhs.label == self.label]
 		for prod in myprods:
@@ -273,35 +341,57 @@ class Symbol:
 					else:
 						self.first.update(prod.rhs[x].first)
 						break
-	def add_dependence(self, symbol):
-		self.dependences.append(symbol)
-
-	def print_firsts(self):
-		print(str(self.first))
+	def calculate_first_nt(self, productions, vn):
+		myprods = [prod for prod in productions if prod.lhs.label == self.label]
+		for prods in myprods:
+			x = 0
+			while True:
+				if x >= len(prods.rhs):
+					break
+				else:
+					if prods.rhs[x] in vn and prods.rhs[x] not in self.first_nt:
+						self.first_nt.add(prods.rhs[x])
+						if prods.rhs[x].label != self.label:
+							prods.rhs[x].calculate_first_nt(productions, vn)
+							self.first_nt.update(prods.rhs[x].first_nt)
+						if prods.rhs[x].has_epsilon_in_first():
+							x+=1
+						else:
+							break
+					else:
+						break
+	def calculate_nt_reachables(self, productions, vn):
+		myprods = [prod for prod in productions if prod.lhs.label == self.label]
+		for prod in myprods:
+			for rhs in prod.rhs:
+				if rhs not in self.nt_reachables and rhs in vn:
+					self.nt_reachables.add(rhs)
+					if rhs.label != self.label:
+						rhs.calculate_nt_reachables(productions, vn)
+						self.nt_reachables.update(rhs.nt_reachables)
 
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
-grammar3 = "S->b B|A a\nA->b S|&\nB->a"
+grammar3 = "S->b B|A a\nA->b S|B a|&\nB->a"
 grammar4 = "S->a S|B C|B D\nA->c C|A B\nB->b B|&\nC->a A|B C\nD->d D d|c"
-cfg = ContextFreeGrammar(grammar)
+grammar5 = "E->T E1\nE1->+ T E1|&\nT->F T1\nT1->* F T1|&\nF->( E )|i"
+grammar6 = "E->E + T|T\nT->T * F|F\nF->( E )|a"
+grammar7 = "S1->S1 a|b B|c B|A d\nA->B B A w A|h|&\nB->f|&"
+grammar8 = "S->B a\nB->B"
+cfg = ContextFreeGrammar(" ",grammar)
+#cfg.set_firsts()
+#cfg.set_follows()
 # for i in cfg.vn:
 # 	cfg.set_first_nt(i)
 # cfg.set_follows()
-# for i in cfg.vn:
-#  	print(str(i)+" first")
-#  	print(i.first)
-# for i in cfg.vn:
-#  	print(str(i)+" follow")
-#  	print(i.follow)
-# for i in cfg.vn:
-#  	print(str(i)+" first_nt")
-#  	print(i.first_nt)
-cfg.into_epsilon_free()
-'''
-							if yn == Prev and yn != X:
-								print(Prev)
-								print(X)
-								X.add_dependence(Prev)
-								Prev.add_dependence(X)
-							else:	
-'''
+for i in cfg.vn:
+  	print(str(i)+" first")
+  	print(i.first)
+for i in cfg.vn:
+  	print(str(i)+" follow")
+  	print(i.follow)
+for i in cfg.vn:
+	print(str(i)+" first_nt")
+	print(i.first_nt)
+
+print(cfg.finiteness())
