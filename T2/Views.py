@@ -1,4 +1,4 @@
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QTextEdit, QComboBox, QGridLayout, QTableWidget, QTableWidgetItem, QLabel
 from models import *
 '''
@@ -38,9 +38,23 @@ class View(QWidget):
 		self.view.textCursor().insertText(grammar.p_string)
 		font = QtGui.QFont()
 		font.setBold(True)
-		finiteness = QLabel(self)
-		finiteness.setFont(font)
+		states = QLabel(self)
+		states.setFont(font)
 		rep_g = grammar
-		text = rep_g.finiteness()
-		finiteness.setText(text)
-		self.grid.addWidget(finiteness, 1, 1)
+		text1 = rep_g.finiteness()
+		if rep_g.is_epsilon_free():
+			text2 = "Epsilon Livre"
+		else:
+			text2 = "Não epsilon Livre"
+		
+		if rep_g.has_simple_productions():
+			text3 = "Tem produções simples"
+		else:
+			text3 = "Não tem produções simples"
+
+		if rep_g.has_useless_symbols():
+			text4 = "Tem simbolos inúteis"
+		else:
+			text4 = "Não tem simbolos inúteis" 
+		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4)
+		self.grid.addWidget(states, 1, 1)

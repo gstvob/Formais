@@ -1,5 +1,5 @@
 import re
-
+import itertools
 
 class ContextFreeGrammar:
 	
@@ -48,9 +48,48 @@ class ContextFreeGrammar:
 				return True
 		return False
 
+	def has_simple_productions(self):
+		for p in self.productions:
+			if len(p.rhs) == 1 and p.rhs[0] in self.vn:
+				return True
+		return False
+
+	def is_epsilon_free(self):
+		if "&" in [k.label for k in self.vt]:
+			for p in self.productions:
+				if "&" in [rhs.label for rhs in p.rhs] and p.lhs != self.S:
+					return False
+			
+			prods_for_S = [prods for prods in self.productions if prods.lhs == self.S]
+			epsilon = next(s for s in self.vt if s.label == "&")
+			for k in prods_for_S:
+				if epsilon in k.rhs:
+					for p in self.productions:	
+						if self.S in p.rhs:
+							return False
+		return True
+	def has_useless_symbols(self):
+		if self.remove_dead_symbols() or self.remove_unreachable_symbols():
+			return True
+		return False
+
+
+	def has_leftmost_recursion(self):
+		for p in self.vn:
+			for j in self.vn:
+				if p != j:
+					if p.first_nt == j.first_nt:
+						return True
+		for p in self.vn:
+			if p in p.first_nt:
+				return True
+		return False
 	#método terrível, se me pergutarem não fui eu que fiz.
 	def decompose_and_formalize(self):
 		prods = self.p_string.split("\n")
+		self.vn = set()
+		self.vt = set()
+		self.productions = []
 		for p in prods:
 			x = p.split("->")
 			lhs = Symbol(x[0])
@@ -73,9 +112,6 @@ class ContextFreeGrammar:
 						rhs.append(k)
 				self.productions.append(Production(lhs, rhs))
 		self.S = self.productions[0].lhs
-		self.set_firsts()
-		self.set_follows()
-		self.set_first_nt()
 
 	def set_firsts(self):
 		
@@ -150,8 +186,6 @@ class ContextFreeGrammar:
 			self.vn = self.vn&vf
 			self.vt = self.vt&vf
 			self.redefine_productions()
-			print(self.productions)
-
 
 	def remove_dead_symbols(self):
 		Nf = set()
@@ -222,61 +256,121 @@ class ContextFreeGrammar:
 		Ne = Nprev
 		
 		e_freeProds = [r for r in self.productions]
+		if self.S in Ne:
+			e_freeProds.add(Production(Symbol("S0"), [self.S, epsilon]))
 		for prod in self.productions:
 			if prod.rhs[0] == epsilon:
 				e_freeProds.remove(prod)
 		for prod in self.productions:
 			x = 0
-			removals = []
-			while x < len(prod.rhs):
-				if prod.rhs[x] in Ne and (x-1==-1 or prod.rhs[x] not in self.vt):
-					removals.append(prod.rhs[x])
-					for i in removals:
+			while True:
+				removals = []
+				while x < len(prod.rhs):
+					if prod.rhs[x] in self.vt:
+						break
+					if prod.rhs[x] in Ne and (x-1==-1 or prod.rhs[x] not in self.vt) and len(prod.rhs) > 1:
+						removals.append(x)
+					x+=1
+				sizo = 1
+				while True:	
+					if sizo > len(removals):
+						break
+					a = list(itertools.combinations(removals, sizo))
+					for i in a:
 						newRhs = [r for r in prod.rhs]
-						del newRhs[newRhs.index(i)]
+						for s in i:
+							newRhs[s]=Symbol("$at")
+						newRhs = [r for r in newRhs if r.label != "$at"]
 						newP = Production(prod.lhs, newRhs)
 						if newP not in e_freeProds:
 							e_freeProds.append(newP)
+					sizo+=1
 				x+=1
-		print(e_freeProds)
-		print(self.productions)
-
+				if x >= len(prod.rhs):
+					break
+		self.productions = e_freeProds
+		self.stringify_productions()
+	
 	def remove_simple_productions(self):
+		simples = []
 		for prod in self.productions:
 			prod.lhs.calculate_simple_productions(self.productions, self.vn)
 		for prod in self.productions:
 			if len(prod.rhs) == 1 and prod.rhs[0] in self.vn:
-				self.productions.remove(prod)
+				simples.append(prod)
 				for s in prod.lhs.simple:
-					non_simple = [p.rhs for p in self.productions if p.lhs == s]
-					for p in non_simple:
-						if len(p) == 1 and p[0] in self.vn:
-							continue
-						else:
+					if s.label == prod.lhs.label:
+						continue
+					else:
+						non_simple = [p.rhs for p in self.productions if p.lhs == s]
+						for p in non_simple:
 							new_prod = Production(prod.lhs, p)
-							self.productions.append(new_prod)
+							if len(p) == 1 and p[0] in self.vn:
+								continue
+							elif new_prod not in self.productions:
+								self.productions.append(new_prod)
+		self.productions = [prod for prod in self.productions if prod not in simples]
 		self.stringify_productions()
 
+	def into_proper_grammar(self):
+		if not self.is_epsilon_free():
+			self.into_epsilon_free()
+			self.decompose_and_formalize()
+			print("EPSILON FREE")
+			print(self.p_string)
+		if self.has_simple_productions():		
+			self.remove_simple_productions()
+			self.productions = []
+			self.decompose_and_formalize()
+			print("sem prods simples")
+			print(self.p_string)
+		self.remove_useless_symbols()
+		self.productions = []
+		self.decompose_and_formalize()
+		print("propra")
+		print(self.p_string)
+
+	def remove_leftmost_recursion(self):
+		for nt in self.vn:
+			nt_prods = [prod for prod in self.productions if nt == prod.lhs]
+			if nt in nt.first_nt:
+				self.remove_direct_recursion(nt_prods, nt)
+
+	def remove_direct_recursion(self, prod, nt):
+		prods_without_recursion = []
+		prods_with_recursion = []
+		for p in prod:
+			if nt not in p.rhs:
+				prods_without_recursion.append(p)
+			else:
+				prods_with_recursion.append(p)
+		
+		new_nt = self.new_nt(nt)
+		if prods_with_recursion:
+			for p in prods_with_recursion:
+				p.lhs = new_nt
+				p.rhs
+		print(prods_with_recursion)
 	def stringify_productions(self):
 		productions = []
 		for nt in self.vn:
 			prods_per_nt = [prod for prod in self.productions if prod.lhs == nt]
-			string = nt.label+"->"
-			for p in prods_per_nt:
-				for rhs in p.rhs:
-					string+=rhs.label+" "
-				string += "|"
-			string = string.replace(" |", "|")
-			string = string.replace("| ", "|")
-			string = string[:-1]
-			productions.append(string)
+			if prods_per_nt:
+				string = nt.label+"->"
+				for p in prods_per_nt:
+					for rhs in p.rhs:
+						string+=rhs.label+" "
+					string += "|"
+				string = string.replace(" |", "|")
+				string = string.replace("| ", "|")
+				string = string[:-1]
+				productions.append(string)
 		productions = list(reversed(productions))
 		for p in productions:
 			if p.split("->")[0] == self.S.label:
 				self.p_string = p+"\n"
 				productions.remove(p)
 		self.p_string += "\n".join(productions)
-	
 	def redefine_productions(self):
 
 		for p in self.productions:
@@ -286,15 +380,27 @@ class ContextFreeGrammar:
 				if r not in self.vn and r not in self.vt:
 					p.rhs.remove(r)
 		self.stringify_productions()
+
+	def new_nt(self, nt):
+		label1 = nt.label[0]
+		contador = 1
+		new_nt = None
+		while True:
+			if label1+str(contador) in [k.label for k in self.vn]:
+				contador+=1
+				continue
+			else:
+				new_nt = Symbol(label1+str(contador))
+				break
+		return new_nt
 class Production:
 	def __init__(self, lhs, rhs):
 		self.lhs = lhs
 		self.rhs = rhs
 	def __repr__(self):
 		return str(self.lhs)+"->"+str(self.rhs)
-
 	def __eq__(self, other):
-		return self.rhs == other.rhs
+		return self.rhs == other.rhs and self.lhs == other.lhs
 
 class Symbol:
 	def __init__(self, label):
@@ -315,9 +421,10 @@ class Symbol:
 		for p in all_prods_nt:
 			if len(p.rhs) == 1 and p.rhs[0] in vn:
 				self.simple.add(p.rhs[0])
-				p.rhs[0].calculate_simple_productions(productions, vn)
-				if len(p.rhs[0].simple) > 0:
-					self.simple.update(p.rhs[0].simple)
+				if p.rhs[0].label != self.label:
+					p.rhs[0].calculate_simple_productions(productions, vn)
+					if len(p.rhs[0].simple) > 0:
+						self.simple.update(p.rhs[0].simple)
 
 	def calculate_first(self, productions, vn, vt):
 		myprods = [prod for prod in productions if prod.lhs.label == self.label]
@@ -330,7 +437,7 @@ class Symbol:
 			previousHadEpsilon = True
 			for x in range(len(prod.rhs)):
 				if previousHadEpsilon:
-					if prod.rhs[x] not in vt:
+					if prod.rhs[x] not in vt and prod.rhs[x]:
 						if prod.rhs[x].label != self.label:
 							prod.rhs[x].calculate_first(productions, vn, vt)
 							self.first.update(prod.rhs[x].first-{epsilon})
@@ -349,7 +456,7 @@ class Symbol:
 				if x >= len(prods.rhs):
 					break
 				else:
-					if prods.rhs[x] in vn and prods.rhs[x] not in self.first_nt:
+					if prods.rhs[x] in vn:
 						self.first_nt.add(prods.rhs[x])
 						if prods.rhs[x].label != self.label:
 							prods.rhs[x].calculate_first_nt(productions, vn)
@@ -369,7 +476,8 @@ class Symbol:
 					if rhs.label != self.label:
 						rhs.calculate_nt_reachables(productions, vn)
 						self.nt_reachables.update(rhs.nt_reachables)
-'''
+
+
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
 grammar3 = "S->b B|A a\nA->b S|B a|&\nB->a"
@@ -378,21 +486,25 @@ grammar5 = "E->T E1\nE1->+ T E1|&\nT->F T1\nT1->* F T1|&\nF->( E )|i"
 grammar6 = "E->E + T|T\nT->T * F|F\nF->( E )|a"
 grammar7 = "S1->S1 a|b B|c B|A d\nA->B B A w A|h|&\nB->f|&"
 grammar8 = "S->B a\nB->B"
+grammar9 = "S->a A|B b\nA->a A|&\nB->b B|A|&"
+grammar10 = "S->&|a A\nA->a|&"
+grammar11 = "S->A b|a\nA->S b|a"
 cfg = ContextFreeGrammar(" ",grammar)
 #cfg.set_firsts()
 #cfg.set_follows()
 # for i in cfg.vn:
 # 	cfg.set_first_nt(i)
 # cfg.set_follows()
+cfg.set_firsts()
+cfg.set_follows()
+cfg.set_first_nt()
 for i in cfg.vn:
-  	print(str(i)+" first")
-  	print(i.first)
+	print(str(i)+" first")
+	print(i.first)
 for i in cfg.vn:
-  	print(str(i)+" follow")
-  	print(i.follow)
+	print(str(i)+" follow")
+	print(i.follow)
 for i in cfg.vn:
 	print(str(i)+" first_nt")
 	print(i.first_nt)
-
-print(cfg.finiteness())
-'''
+cfg.remove_leftmost_recursion()
