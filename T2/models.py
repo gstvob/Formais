@@ -313,28 +313,40 @@ class ContextFreeGrammar:
 		self.stringify_productions()
 
 	def into_proper_grammar(self):
+		intermediary = dict()
 		if not self.is_epsilon_free():
 			self.into_epsilon_free()
 			self.decompose_and_formalize()
 			print("EPSILON FREE")
 			print(self.p_string)
+			intermediary["e-free"] = self.p_string
 		if self.has_simple_productions():		
 			self.remove_simple_productions()
 			self.productions = []
 			self.decompose_and_formalize()
 			print("sem prods simples")
 			print(self.p_string)
+			intermediary["no-simple"] = self.p_string
 		self.remove_useless_symbols()
 		self.productions = []
 		self.decompose_and_formalize()
 		print("propra")
 		print(self.p_string)
-
+		intermediary["no-useless"]=self.p_string
+		return intermediary
 	def remove_leftmost_recursion(self):
 		for nt in self.vn:
 			nt_prods = [prod for prod in self.productions if nt == prod.lhs]
 			if nt in nt.first_nt:
 				self.remove_direct_recursion(nt_prods, nt)
+		
+		for p in self.productions:
+			if p.lhs not in self.vn:
+				self.vn.add(p.lhs)
+		self.stringify_productions()
+		self.decompose_and_formalize()
+
+		#if not self.has_simple_productions() and self.is_epsilon_free() and not has_useless_symbols():			
 
 	def remove_direct_recursion(self, prod, nt):
 		prods_without_recursion = []
@@ -349,8 +361,18 @@ class ContextFreeGrammar:
 		if prods_with_recursion:
 			for p in prods_with_recursion:
 				p.lhs = new_nt
-				p.rhs
-		print(prods_with_recursion)
+				x = 0
+				while True:
+					if p.rhs[x].has_epsilon_in_first() and p.rhs[x] != nt:
+						x+=1
+					elif p.rhs[x] == nt:
+						p.rhs[x] = Symbol("$at")
+					else:
+						break
+				p.rhs = [rhs for rhs in p.rhs if rhs.label != "$at"]
+				p.rhs.append(new_nt)
+		for p in prods_without_recursion:
+			p.rhs.append(new_nt)
 	def stringify_productions(self):
 		productions = []
 		for nt in self.vn:
@@ -397,6 +419,14 @@ class Production:
 	def __init__(self, lhs, rhs):
 		self.lhs = lhs
 		self.rhs = rhs
+
+	def __cmp__(self, other):
+		if self.lhs > other.lhs:
+			return 1
+		elif self.lhs < other.lhs:
+			return -1
+		else:
+			return 0
 	def __repr__(self):
 		return str(self.lhs)+"->"+str(self.rhs)
 	def __eq__(self, other):
@@ -476,7 +506,7 @@ class Symbol:
 					if rhs.label != self.label:
 						rhs.calculate_nt_reachables(productions, vn)
 						self.nt_reachables.update(rhs.nt_reachables)
-
+'''
 
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
@@ -489,7 +519,8 @@ grammar8 = "S->B a\nB->B"
 grammar9 = "S->a A|B b\nA->a A|&\nB->b B|A|&"
 grammar10 = "S->&|a A\nA->a|&"
 grammar11 = "S->A b|a\nA->S b|a"
-cfg = ContextFreeGrammar(" ",grammar)
+grammar12 = "E->E + T|( E )|a|T * F\nT->T * F|( E )|a\nF->( E )|a"
+cfg = ContextFreeGrammar(" ",grammar6)
 #cfg.set_firsts()
 #cfg.set_follows()
 # for i in cfg.vn:
@@ -507,4 +538,4 @@ for i in cfg.vn:
 for i in cfg.vn:
 	print(str(i)+" first_nt")
 	print(i.first_nt)
-cfg.remove_leftmost_recursion()
+cfg.remove_leftmost_recursion()	'''

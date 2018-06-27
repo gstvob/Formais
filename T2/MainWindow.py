@@ -2,7 +2,8 @@ import sys
 from PyQt5.QtWidgets import (QTextEdit, QApplication, QMainWindow, QWidget, QAction, qApp, QMenu)
 from Forms import *
 from Views import *
-#from Editors import *
+from operations import *
+
 '''
 
 AUTOR : GUSTAVO BORGES FRANÇA
@@ -30,13 +31,11 @@ class MainWindow(QMainWindow):
 		menubar = self.menuBar()
 		new_menu = menubar.addMenu("&Novo")
 		list_menu = menubar.addMenu("&Listar")
-		#edit_menu = menubar.addMenu("&Editar")
-		# operation_menu = menubar.addMenu("&Operações")
+		operation_menu = menubar.addMenu("&Operações")
 
 		self.set_newMenu(new_menu)
 		self.set_listMenu(list_menu)
-		# self.set_editMenu(edit_menu)
-		# self.set_operations_menu(operation_menu)
+		self.set_operations_menu(operation_menu)
 		self.setGeometry(300, 300, 560, 320)
 		self.setWindowTitle("Aplicação para manipulação GLCs")
 		self.show()
@@ -50,10 +49,10 @@ class MainWindow(QMainWindow):
 		grammar_view = View(self.grammars)
 		self.setCentralWidget(grammar_view)
 
-   # def _edit_grammars(self):
-    #    grammar_edit = GrammarForm()
-     #   grammar_edit.update(self.grammars)
-      #  self.setCentralWidget(grammar_edit)
+	def _into_proper(self):
+		to_proper = ContextFreeOperations()
+		to_proper.choose_to_transform(self.grammars)
+		self.setCentralWidget(to_proper)
 
 	def set_newMenu(self, new_menu):
 
@@ -72,14 +71,13 @@ class MainWindow(QMainWindow):
 		list_regularG.setStatusTip("Ver todas as gramáticas salvas")
 		list_regularG.triggered.connect(self._view_grammars)
 		list_menu.addAction(list_regularG)
-'''        
-	def set_editMenu(self, edit_menu):
-		edit_regularG = QAction("&Editar GLC", self)
-		edit_regularG.setStatusTip("Editar GLC")
-		edit_regularG.triggered.connect(self._edit_grammars)
-		edit_menu.addAction(edit_regularG)
-		edit_menu.addAction(edit_regularE)
-'''
+
+	def set_operations_menu(self,operations_menu):
+		into_proper = QAction("Transformar em GLC propria", self)
+		into_proper.setStatusTip("Transformar GLC em propria")
+		into_proper.triggered.connect(self._into_proper)
+		operations_menu.addAction(into_proper)
+
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)

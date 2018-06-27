@@ -56,5 +56,8 @@ class View(QWidget):
 			text4 = "Tem simbolos inúteis"
 		else:
 			text4 = "Não tem simbolos inúteis" 
+
+		lfm_recursion = rep_g.has_leftmost_recursion()
+
 		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4)
 		self.grid.addWidget(states, 1, 1)
