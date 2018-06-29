@@ -84,7 +84,7 @@ class ContextFreeGrammar:
 		simplesmente verifica se algum dos métodos para remover simbolos inuteis retorna vazio.
 	'''
 	def has_useless_symbols(self):
-		if self.remove_dead_symbols() or self.remove_unreachable_symbols():
+		if len(self.remove_dead_symbols()) != len(self.vn) or len(self.remove_unreachable_symbols()) != len(self.vt)+len(self.vn):
 			return True
 		return False
 
@@ -112,11 +112,14 @@ class ContextFreeGrammar:
 		para ela não ser fatorada, caso não seja vazio ela não está fatorada.
 	'''
 	def is_factored(self):
+		if self.has_leftmost_recursion():
+			return False
 		for nt in self.vn:
 			prods = [p for p in self.productions if p.lhs == nt]
 			firsts = []
 			for p in prods:
-				firsts.append(p.production_first(self.vn, self.vt))	
+				firsts.append(p.production_first(self.vn, self.vt))
+			print(firsts)	
 			for a, b in itertools.combinations(firsts, 2):
 				if a&b:
 					return False
@@ -431,43 +434,46 @@ class ContextFreeGrammar:
 			epsilon = Symbol("&")
 			self.vt.add(epsilon)
 
-		# for nt in self.vn:
-		# 	nt_prods = [prod for prod in self.productions if nt == prod.lhs]
-		# 	if nt in nt.first_nt:
-		# 		self.remove_direct_recursion(nt_prods, nt, epsilon)
+		for nt in self.vn:
+			nt_prods = [prod for prod in self.productions if nt == prod.lhs]
+			if nt in nt.first_nt:
+				self.remove_direct_recursion(nt_prods, nt, epsilon)
 		
-		# for p in self.productions:
-		# 	if p.lhs not in self.vn:
-		# 		self.vn.add(p.lhs)
+		for p in self.productions:
+			if p.lhs not in self.vn:
+				self.vn.add(p.lhs)
 
+		self.stringify_productions()
+		self.decompose_and_formalize()
+		print(self.p_string)
+		# self.into_proper_grammar()
+		# if not self.has_simple_productions() and self.is_epsilon_free() and not self.has_useless_symbols():	
+		# 	for i in range(1, len(self.vn)):
+		# 		j = 0
+		# 		Ai = list(self.vn)[i]
+		# 		Ai_prods = [prods for prods in self.productions if prods.lhs == Ai]
+		# 		Ai_rhs = [prods.rhs for prods in Ai_prods]
+		# 		while j <= i-1:
+		# 			Aj = list(self.vn)[j]
+		# 			for rhs in Ai_rhs:
+		# 				if Aj in rhs:
+		# 					if len(rhs) > 1:
+		# 						reusable_rhs = [symbol for symbol in rhs if symbol != Aj]
+		# 					Aj_prods = [prods for prods in  self.productions if prods.lhs == Aj]
+		# 					Aj_rhs = [prods.rhs for prods in Aj_prods]
+		# 					new_rhs = [r for r in Ai_rhs if rhs != r]
+		# 					for skr in Aj_rhs:
+		# 						new_rhs.append(skr+reusable_rhs)
+		# 					newProds = []
+		# 					Ai_prods = []
+		# 					for r in new_rhs:
+		# 						newProds.append(Production(Ai, r))
+		# 					Ai_prods += newProds
+		# 			j+=1
+		# 		self.remove_direct_recursion(Ai_prods, Ai, epsilon)
 		# self.stringify_productions()
 		# self.decompose_and_formalize()
 		# print(self.p_string)
-		# if not self.has_simple_productions() and self.is_epsilon_free() and not self.has_useless_symbols():	
-
-		for i in range(1, len(self.vn)):
-			j = 0
-			Ai = list(self.vn)[i]
-			Ai_prods = [prods for prods in self.productions if prods.lhs == Ai]
-			Ai_rhs = [prods.rhs for prods in Ai_prods]
-			while j <= i-1:
-				Aj = list(self.vn)[j]
-				for rhs in Ai_rhs:
-					if Aj in rhs:
-						if len(rhs) > 1:
-							reusable_rhs = [symbol for symbol in rhs if symbol != Aj]
-						Aj_prods = [prods for prods in  self.productions if prods.lhs == Aj]
-						Aj_rhs = [prods.rhs for prods in Aj_prods]
-						new_rhs = [r for r in Ai_rhs if rhs != r]
-						for skr in Aj_rhs:
-							new_rhs.append(skr+reusable_rhs)
-						newProds = []
-						Ai_prods = []
-						for r in new_rhs:
-							newProds.append(Production(Ai, r))
-						Ai_prods += newProds
-				j+=1
-			self.remove_direct_recursion(Ai_prods, Ai, epsilon)
 	'''
 		Remover recursão a esquerda diretas
 	'''
@@ -723,36 +729,36 @@ class Symbol:
 						self.nt_reachables.update(rhs.nt_reachables)
 
 
-grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
-grammar2 = "S1->B a|b B|c B|A d\nA->A w|h|&\nB->S1 f|&"
-grammar3 = "S->b B|A a\nA->b S|B a|&\nB->x"
-grammar4 = "S->a S|B C|B D\nA->c C|A B\nB->b B|&\nC->a A|B C\nD->d D d|c"
-grammar5 = "E->T E1\nE1->+ T E1|&\nT->F T1\nT1->* F T1|&\nF->( E )|i"
-grammar6 = "E->E + T|T\nT->T * F|F\nF->( E )|a"
-grammar7 = "S1->S1 a|b B|c B|A d\nA->B B A w A|h|&\nB->f|&"
-grammar8 = "S->B a\nB->B"
-grammar9 = "S->a A|B b\nA->a A|&\nB->b B|A|&"
-grammar10 = "S->&|a A\nA->a|&"
-grammar11 = "S->A b|a\nA->S b|a"
-grammar12 = "E->E + T|( E )|a|T * F\nT->T * F|( E )|a\nF->( E )|a"
-grammar13 = "S->A b\nA->S a"
-grammar14 = "S->A a|S b\nA->S c|d"
-cfg = ContextFreeGrammar(" ",grammar14)
-#cfg.set_firsts()
-#cfg.set_follows()
-# for i in cfg.vn:
-# 	cfg.set_first_nt(i)
+# grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
+# grammar2 = "S1->B a|b B|c B|A d\nA->A w|h|&\nB->S1 f|&"
+# grammar3 = "S->b B|A a\nA->b S|B a|&\nB->x"
+# grammar4 = "S->a S|B C|B D\nA->c C|A B\nB->b B|&\nC->a A|B C\nD->d D d|c"
+# grammar5 = "E->T E1\nE1->+ T E1|&\nT->F T1\nT1->* F T1|&\nF->( E )|i"
+# grammar6 = "E->E + T|T\nT->T * F|F\nF->( E )|a"
+# grammar7 = "S1->S1 a|b B|c B|A d\nA->B B A w A|h|&\nB->f|&"
+# grammar8 = "S->B a\nB->B"
+# grammar9 = "S->a A|B b\nA->a A|&\nB->b B|A|&"
+# grammar10 = "S->&|a A\nA->a|&"
+# grammar11 = "S->A b|a\nA->S b|a"
+# grammar12 = "E->E + T|( E )|a|T * F\nT->T * F|( E )|a\nF->( E )|a"
+# grammar13 = "S->A b\nA->S a"
+# grammar14 = "S->A a|S b\nA->S c|d"
+# cfg = ContextFreeGrammar(" ",grammar14)
+# #cfg.set_firsts()
+# #cfg.set_follows()
+# # for i in cfg.vn:
+# # 	cfg.set_first_nt(i)
+# # cfg.set_follows()
+# cfg.set_firsts()
 # cfg.set_follows()
-cfg.set_firsts()
-cfg.set_follows()
-cfg.set_first_nt()
-for i in cfg.vn:
-	print(str(i)+" first")
-	print(i.first)
-for i in cfg.vn:
-	print(str(i)+" follow")
-	print(i.follow)
-for i in cfg.vn:
-	print(str(i)+" first_nt")
-	print(i.first_nt)
-cfg.remove_leftmost_recursion()
+# cfg.set_first_nt()
+# for i in cfg.vn:
+# 	print(str(i)+" first")
+# 	print(i.first)
+# for i in cfg.vn:
+# 	print(str(i)+" follow")
+# 	print(i.follow)
+# for i in cfg.vn:
+# 	print(str(i)+" first_nt")
+# 	print(i.first_nt)
+# cfg.remove_leftmost_recursion()

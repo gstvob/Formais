@@ -33,6 +33,39 @@ class ContextFreeOperations(QWidget):
 		self.setLayout(grid)
 		self.show()
 
+	def choose_to_remove(self, grammars):
+		grid = QGridLayout(self)
+		choose = QComboBox(self)
+		for i in grammars:
+			choose.addItem(i.name)
+		grid.addWidget(choose, 0,0)
+		choose.activated[str].connect(lambda d: self.remove_recursion(choose.currentText(), grammars))
+		self.setLayout(grid)
+		self.show()
+
+
+
+	def remove_recursion(self, name, grammars):
+		grammar = next(g for g in grammars if g.name == name)
+		intermed_g = ContextFreeGrammar("$at", grammar.p_string)
+		intermed_g.remove_leftmost_recursion()
+		original = QTextEdit(self)
+		without_recursion = QTextEdit(self)
+
+		save_without_recursion = QPushButton("Salvar gramática sem recursão", self)
+
+		save_without_recursion.clicked.connect(lambda d: self._save_grammar(without_recursion.toPlainText(), grammars))
+
+		original.setReadOnly(True)
+		without_recursion.setReadOnly(True)
+
+		original.textCursor().insertText(grammar.p_string)
+		without_recursion.textCursor().insertText(intermed_g.p_string)
+
+		self.layout().addWidget(original, 1, 0)
+		self.layout().addWidget(without_recursion, 2, 0)
+		self.layout().addWidget(save_without_recursion, 2, 1)
+
 	def transform(self, name, grammars):
 		grammar = next(g for g in grammars if g.name == name)
 		intermed_g = ContextFreeGrammar("$at", grammar.p_string)
@@ -55,7 +88,7 @@ class ContextFreeOperations(QWidget):
 		without_simple_prods.setReadOnly(True)
 		without_useless_symbols.setReadOnly(True)
 
-		original.textCursor().insertText(intermed_g.p_string)
+		original.textCursor().insertText(grammar.p_string)
 
 		if "e-free" in intermeds:
 			epsilon_free.textCursor().insertText(intermeds["e-free"])

@@ -65,12 +65,23 @@ class View(QWidget):
 		rep_g.set_firsts()
 		rep_g.set_follows()
 		rep_g.set_first_nt()
+		text6 = ""
+		text7 = ""
+		text8 = ""
+		for i in rep_g.vn:
+			text6 += str(i)+" firsts = "
+			text6 += "".join(str(i.first))+"\n"
+		for i in rep_g.vn:
+			text7 += str(i)+" follows = "
+			text7 += "".join(str(i.follow))+"\n"
+		for i in rep_g.vn:
+			text8 += str(i)+" first_nt = "
+			text8 += "".join(str(i.first_nt))+"\n"
 
-		text6 = str(rep_g.first)
-		text7 = str(rep_g.follow)
-		text8 = str(rep_g.first_nt)
+		if rep_g.has_leftmost_recursion():
+			text9 = "Tem recursão a esquerda"
+		else:
+			text9 = "Não tem recursão a esquerda"
 
-		lfm_recursion = rep_g.has_leftmost_recursion()
-
-		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4+"\n"+text5+"\n"+text6+"\n"+text7+"\n"+text8+"\n"+lfm_recursion)
+		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4+"\n"+text5+"\n"+text6+"\n"+text7+"\n"+text8+"\n"+text9)
 		self.grid.addWidget(states, 1, 1)
