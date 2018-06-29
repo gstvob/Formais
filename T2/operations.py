@@ -42,9 +42,13 @@ class ContextFreeOperations(QWidget):
 		without_simple_prods = QTextEdit(self)
 		without_useless_symbols = QTextEdit(self)
 
-		save_epsilon_free = QPushButton(self)
-		save_without_simple_prods = QPushButton(self)
-		save_without_useless_symbols = QPushButton(self)
+		save_epsilon_free = QPushButton("Salvar gramática &-livre", self)
+		save_without_simple_prods = QPushButton("Salvar gramática sem produções simples", self)
+		save_without_useless_symbols = QPushButton("Salvar gramática sem símbolos inúteis", self)
+
+		save_epsilon_free.clicked.connect(lambda d: self._save_grammar(epsilon_free.toPlainText(), grammars))
+		save_without_simple_prods.clicked.connect(lambda d: self._save_grammar(without_simple_prods.toPlainText(), grammars))
+		save_without_useless_symbols.clicked.connect(lambda d: self._save_grammar(without_useless_symbols.toPlainText(), grammars))
 
 		original.setReadOnly(True)
 		epsilon_free.setReadOnly(True)
@@ -76,3 +80,15 @@ class ContextFreeOperations(QWidget):
 		self.layout().addWidget(save_epsilon_free, 2, 1)
 		self.layout().addWidget(save_without_simple_prods, 3, 1)
 		self.layout().addWidget(save_without_useless_symbols, 4, 1)		
+
+	def _save_grammar(self, grammar, grammar_list):
+		saved = False
+		while not saved:
+			name, ok = QInputDialog().getText(self, "Input Dialog", "Nomeie a gramática")
+			if ok:
+				if not any(x.name == name for x in grammars) and name != "":
+					n_g = ContextFreeGrammar(name, grammar)
+					grammars.append(grammar)
+					saved = True
+			else:
+				break

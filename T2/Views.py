@@ -57,7 +57,12 @@ class View(QWidget):
 		else:
 			text4 = "Não tem simbolos inúteis" 
 
+		if rep_g.is_factored():
+			text5 = "Está fatorada"
+		else:
+			text5 = "Não está fatorada"
+
 		lfm_recursion = rep_g.has_leftmost_recursion()
 
-		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4)
+		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4+"\n"+text5)
 		self.grid.addWidget(states, 1, 1)

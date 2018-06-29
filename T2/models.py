@@ -1,12 +1,19 @@
 import re
 import itertools
 
+'''
+	Classe de definição das linguagens livre de contexto
+'''
 class ContextFreeGrammar:
 	
+
 	FINITE = "Finita"
 	INFINITE = "Infinita"
 	EMPTY = "Vazia"
 
+	'''
+		Construtor
+	'''
 	def __init__(self, name, productions):
 		self.name = name
 		self.p_string = productions
@@ -15,22 +22,10 @@ class ContextFreeGrammar:
 		self.vt = set()
 		self.S = None
 		self.decompose_and_formalize()
-	
-	##not working
-	def parse_cfg(self):
-		
-		regex = re.compile(r'([A-Z][0-9]?->(([a-z] |[0-9] )*([A-Z][0-9]? )*([a-z]| [0-9])*|[&])([|]([a-z] |[0-9] )*([A-Z][0-9]?)*( [a-z]| [0-9])*|[&])*(\n|\Z))*')
-		match = regex.match(self.p_string)
-		print(match.group())
-		try:
-			if (match.group() == self.p_string):
-				return True
-			else:
-				return False
-		except AttributeError:
-			return False
 
-
+	'''
+		Método que retorna se a gramatica é finita, infinita ou vazia.
+	'''
 	def finiteness(self):
 		self.remove_useless_symbols()
 		if self.p_string == "VAZIO":
@@ -40,7 +35,12 @@ class ContextFreeGrammar:
 		else:
 			return self.FINITE
 
-
+	'''
+		Método que checa se a gramática é infinita.
+		buscando por se existe a derivação do tipo A => aAb por 1 ou mais passos.		
+		ele busca pelos os não terminais que são alcançaveis do simbolo, se o estado estiver nesse conjunto
+		a gramática é infinita.
+	'''
 	def isInfinite(self):
 		for i in self.vn:
 			i.calculate_nt_reachables(self.productions, self.vn)
@@ -48,12 +48,22 @@ class ContextFreeGrammar:
 				return True
 		return False
 
+	'''
+		Verifica se a gramática tem produções simples.
+		buscando produções do tipo S->A na gramática.
+	'''
 	def has_simple_productions(self):
 		for p in self.productions:
 			if len(p.rhs) == 1 and p.rhs[0] in self.vn:
 				return True
 		return False
 
+	'''
+		Verifica se a gramática é epsilon livre.
+		uma glc é &-livre se a gramática não deriva épsilon.
+		ou apenas o simbolo inicial deriva épsilon sendo que ele não pode aparecer no lado
+		direito de nenhuma produção.
+	'''
 	def is_epsilon_free(self):
 		if "&" in [k.label for k in self.vt]:
 			for p in self.productions:
@@ -68,12 +78,22 @@ class ContextFreeGrammar:
 						if self.S in p.rhs:
 							return False
 		return True
+
+	'''
+		Verifica se a GLC tem simbolos inúteis.
+		simplesmente verifica se algum dos métodos para remover simbolos inuteis retorna vazio.
+	'''
 	def has_useless_symbols(self):
 		if self.remove_dead_symbols() or self.remove_unreachable_symbols():
 			return True
 		return False
 
 
+	'''
+		Verifica se a GLC tem recursão a esquerda.
+		simplesmente ele verifica se os first nt das produções são iguais
+		ou se o próprio símbolo é um first nt 
+	'''
 	def has_leftmost_recursion(self):
 		for p in self.vn:
 			for j in self.vn:
@@ -84,6 +104,24 @@ class ContextFreeGrammar:
 			if p in p.first_nt:
 				return True
 		return False
+
+	'''
+		Verifica se a gramática ta fatorada.
+		Pega os firsts de cada produção do lado direito de um símbolo,
+		a intersecção dos firsts dos lados direitos das produções deve ser vazio
+		para ela não ser fatorada, caso não seja vazio ela não está fatorada.
+	'''
+	def is_factored(self):
+		for nt in self.vn:
+			prods = [p for p in self.productions if p.lhs == nt]
+			firsts = []
+			for p in prods:
+				firsts.append(p.production_first(self.vn, self.vt))	
+			for a, b in itertools.combinations(firsts, 2):
+				if a&b:
+					return False
+		return True
+
 	#método terrível, se me pergutarem não fui eu que fiz.
 	def decompose_and_formalize(self):
 		prods = self.p_string.split("\n")
@@ -113,6 +151,10 @@ class ContextFreeGrammar:
 				self.productions.append(Production(lhs, rhs))
 		self.S = self.productions[0].lhs
 
+
+	'''
+		método para setar os firsts de cada simbolo
+	'''
 	def set_firsts(self):
 		
 		#passo1
@@ -121,6 +163,9 @@ class ContextFreeGrammar:
 		for non_terminal in self.vn:
 			non_terminal.calculate_first(self.productions, self.vn, self.vt)
 
+	'''
+		Método para setar os follows de cada símbolo, utilizando o algoritmo visto em sala.
+	'''
 	def set_follows(self):
 		
 		#passo1
@@ -169,10 +214,19 @@ class ContextFreeGrammar:
 						if len(before) != len(prods.rhs[x].follow):
 							changed = True
 
+	'''
+		método para setar os first_nt de cada símbolo.
+	'''
 	def set_first_nt(self):
 		for nt in self.vn:
 			nt.calculate_first_nt(self.productions, self.vn)
 
+	'''
+		remove os símbolos inúteis de uma glc.
+		tira os símbolos mortos, redefine a gramática.
+		tira os símbolos inalcançáveis, redefine a gramática.
+		gramática sem símbolos inúteis.
+	'''
 	def remove_useless_symbols(self):
 		nf = self.remove_dead_symbols()
 		self.vn = self.vn.intersection(nf)
@@ -187,6 +241,9 @@ class ContextFreeGrammar:
 			self.vt = self.vt&vf
 			self.redefine_productions()
 
+	'''
+		Método que retorna Nf, o conjunto símbolos da gramática que são férteis. 
+	'''
 	def remove_dead_symbols(self):
 		Nf = set()
 		Nprev = set()
@@ -212,6 +269,9 @@ class ContextFreeGrammar:
 		Nf = Nprev
 		return Nf
 
+	'''
+		Método que retorna Vf, conjunto de símbolos que são alcançáveis.
+	'''
 	def remove_unreachable_symbols(self):
 		Vf = set()
 		Vprev = {self.S}
@@ -230,6 +290,14 @@ class ContextFreeGrammar:
 		Vf = Vprev
 		return Vf
 
+
+	'''
+		Método que transforma uma gramatica em epsilon livre.
+		utiliza o algoritmo visto em aula,
+		cria o conjunto Ne de símbolos que derivam & direto ou indiretamente.
+		a partir desse conjunto são removidas as produções & diretas e são redefinidas as produções
+		conforme o algoritmo.
+	'''
 	def into_epsilon_free(self):
 		Ne = set()
 		Nprev = set()
@@ -291,6 +359,14 @@ class ContextFreeGrammar:
 		self.productions = e_freeProds
 		self.stringify_productions()
 	
+
+	'''
+		Remove as produções simples.
+		S->T
+		calculando as produções simples de cada conjunto
+		e adicionando as produções desse não terminais simples no não terminal que derivava o simples anteriormente
+		(algoritmo visto em aula)
+	'''
 	def remove_simple_productions(self):
 		simples = []
 		for prod in self.productions:
@@ -312,6 +388,11 @@ class ContextFreeGrammar:
 		self.productions = [prod for prod in self.productions if prod not in simples]
 		self.stringify_productions()
 
+
+	'''
+		Transforma uma gramática em própria
+		Transforma em epsilon livre -> remove produções simples -> remove símbolos inúteis = Gramatica propria.
+	'''
 	def into_proper_grammar(self):
 		intermediary = dict()
 		if not self.is_epsilon_free():
@@ -334,6 +415,10 @@ class ContextFreeGrammar:
 		print(self.p_string)
 		intermediary["no-useless"]=self.p_string
 		return intermediary
+
+	'''
+		Método que vai remover as recursões a esquerda, diretas ou indiretas
+	'''
 	def remove_leftmost_recursion(self):
 		for nt in self.vn:
 			nt_prods = [prod for prod in self.productions if nt == prod.lhs]
@@ -348,6 +433,9 @@ class ContextFreeGrammar:
 
 		#if not self.has_simple_productions() and self.is_epsilon_free() and not has_useless_symbols():			
 
+	'''
+		Remover recursão a esquerda diretas
+	'''
 	def remove_direct_recursion(self, prod, nt):
 		prods_without_recursion = []
 		prods_with_recursion = []
@@ -373,6 +461,9 @@ class ContextFreeGrammar:
 				p.rhs.append(new_nt)
 		for p in prods_without_recursion:
 			p.rhs.append(new_nt)
+	'''
+		Método auxiliar que pega a lista de Produções e transforma em uma string.
+	'''
 	def stringify_productions(self):
 		productions = []
 		for nt in self.vn:
@@ -393,6 +484,10 @@ class ContextFreeGrammar:
 				self.p_string = p+"\n"
 				productions.remove(p)
 		self.p_string += "\n".join(productions)
+
+	'''
+		Método auxiliar para tirar os símbolos que não são ferteis e alcançáveis.
+	'''
 	def redefine_productions(self):
 
 		for p in self.productions:
@@ -402,7 +497,9 @@ class ContextFreeGrammar:
 				if r not in self.vn and r not in self.vt:
 					p.rhs.remove(r)
 		self.stringify_productions()
-
+	'''
+		Método auxiliar para criar um novo NT (usado na fatoração, remoção de recursão e etc.)
+	'''
 	def new_nt(self, nt):
 		label1 = nt.label[0]
 		contador = 1
@@ -415,6 +512,12 @@ class ContextFreeGrammar:
 				new_nt = Symbol(label1+str(contador))
 				break
 		return new_nt
+
+
+'''
+	Classe que define uma produção, que é formada por um lado esquerdo, um simbolo NT, e por um lado direito, que é
+	uma lista de simbolos terminais e não terminais.
+'''
 class Production:
 	def __init__(self, lhs, rhs):
 		self.lhs = lhs
@@ -431,7 +534,32 @@ class Production:
 		return str(self.lhs)+"->"+str(self.rhs)
 	def __eq__(self, other):
 		return self.rhs == other.rhs and self.lhs == other.lhs
+	
+	'''
+		Método que calcula o first de todos os lados direitos de uma produção
+		(auxiliar na detecção de fatoração)
+	'''
+	def production_first(self, vn, vt):
+		p_first = set()
+		for rhs in self.rhs:
+			if rhs in vn:
+				p_first.update(rhs.first)
+				if "&" not in [k.label for k in rhs.first]:
+					if "&" in [k.label for k in p_first]:
+						epsilon = next(symbol for symbol in vt if symbol.label == "&")
+						p_first.remove(epsilon)
+					break
+			elif rhs in vt:
+				if "&" in [k.label for k in p_first]:
+					epsilon = next(symbol for symbol in vt if symbol.label == "&")
+					p_first.remove(symbol)
+				p_first.add(rhs)
+				break
+		return p_first
 
+'''
+	Classe que define um símbolo.
+'''
 class Symbol:
 	def __init__(self, label):
 		self.label = label
@@ -444,8 +572,16 @@ class Symbol:
 	def __repr__(self):
 		return self.label
 
+
+	'''
+		Se uma produção deriva epsilon, ela tem epsilon no first
+	'''
 	def has_epsilon_in_first(self):
 		return "&" in [x.label for x in self.first]
+
+	'''
+		calcula as produções simples de um símbolo NT.
+	'''
 	def calculate_simple_productions(self, productions, vn):
 		all_prods_nt = [p for p in productions if p.lhs.label == self.label]
 		for p in all_prods_nt:
@@ -456,6 +592,10 @@ class Symbol:
 					if len(p.rhs[0].simple) > 0:
 						self.simple.update(p.rhs[0].simple)
 
+	'''
+		Calcula o first de um NT, pegando as produções que ele deriva, e então executando
+		o algoritmo de calculo de first visto em aula.
+	'''
 	def calculate_first(self, productions, vn, vt):
 		myprods = [prod for prod in productions if prod.lhs.label == self.label]
 		for prod in myprods:
@@ -478,6 +618,10 @@ class Symbol:
 					else:
 						self.first.update(prod.rhs[x].first)
 						break
+	'''
+		Método similar ao first, mas calcula o first_nt que são os não terminais que aparecem no começo
+		de uma produção(definição meio fraca, não consigo me expressar direito)
+	'''
 	def calculate_first_nt(self, productions, vn):
 		myprods = [prod for prod in productions if prod.lhs.label == self.label]
 		for prods in myprods:
@@ -497,6 +641,9 @@ class Symbol:
 							break
 					else:
 						break
+	'''
+		calcula os NT que um não terminal alcança
+	'''
 	def calculate_nt_reachables(self, productions, vn):
 		myprods = [prod for prod in productions if prod.lhs.label == self.label]
 		for prod in myprods:
@@ -506,7 +653,6 @@ class Symbol:
 					if rhs.label != self.label:
 						rhs.calculate_nt_reachables(productions, vn)
 						self.nt_reachables.update(rhs.nt_reachables)
-'''
 
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
 grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
@@ -520,6 +666,7 @@ grammar9 = "S->a A|B b\nA->a A|&\nB->b B|A|&"
 grammar10 = "S->&|a A\nA->a|&"
 grammar11 = "S->A b|a\nA->S b|a"
 grammar12 = "E->E + T|( E )|a|T * F\nT->T * F|( E )|a\nF->( E )|a"
+grammar13 = "S->a|b"
 cfg = ContextFreeGrammar(" ",grammar6)
 #cfg.set_firsts()
 #cfg.set_follows()
@@ -538,4 +685,4 @@ for i in cfg.vn:
 for i in cfg.vn:
 	print(str(i)+" first_nt")
 	print(i.first_nt)
-cfg.remove_leftmost_recursion()	'''
+print(cfg.is_factored())
