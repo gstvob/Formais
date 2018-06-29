@@ -128,11 +128,13 @@ class ContextFreeGrammar:
 		self.vn = set()
 		self.vt = set()
 		self.productions = []
+		vn_temp = []
 		for p in prods:
 			x = p.split("->")
 			lhs = Symbol(x[0])
-			self.vn.add(lhs)
+			vn_temp.append(lhs)
 
+		self.vn = set(vn_temp)
 		for p in prods:
 			lhs = p.split("->")
 			lhs = next(symbol for symbol in self.vn if symbol.label == lhs[0])
@@ -162,6 +164,10 @@ class ContextFreeGrammar:
 			terminal.first.add(terminal)
 		for non_terminal in self.vn:
 			non_terminal.calculate_first(self.productions, self.vn, self.vt)
+
+		for non_terminal in self.vn:
+			epsilon = next((x for x in self.vt if x.label == "&"), None)
+			non_terminal.update_first_of_equals(epsilon)
 
 	'''
 		Método para setar os follows de cada símbolo, utilizando o algoritmo visto em sala.
@@ -420,23 +426,52 @@ class ContextFreeGrammar:
 		Método que vai remover as recursões a esquerda, diretas ou indiretas
 	'''
 	def remove_leftmost_recursion(self):
-		for nt in self.vn:
-			nt_prods = [prod for prod in self.productions if nt == prod.lhs]
-			if nt in nt.first_nt:
-				self.remove_direct_recursion(nt_prods, nt)
+		epsilon = next((symbol for symbol in self.vt if symbol.label == "&"), None)
+		if epsilon == None:
+			epsilon = Symbol("&")
+			self.vt.add(epsilon)
+
+		# for nt in self.vn:
+		# 	nt_prods = [prod for prod in self.productions if nt == prod.lhs]
+		# 	if nt in nt.first_nt:
+		# 		self.remove_direct_recursion(nt_prods, nt, epsilon)
 		
-		for p in self.productions:
-			if p.lhs not in self.vn:
-				self.vn.add(p.lhs)
-		self.stringify_productions()
-		self.decompose_and_formalize()
+		# for p in self.productions:
+		# 	if p.lhs not in self.vn:
+		# 		self.vn.add(p.lhs)
 
-		#if not self.has_simple_productions() and self.is_epsilon_free() and not has_useless_symbols():			
+		# self.stringify_productions()
+		# self.decompose_and_formalize()
+		# print(self.p_string)
+		# if not self.has_simple_productions() and self.is_epsilon_free() and not self.has_useless_symbols():	
 
+		for i in range(1, len(self.vn)):
+			j = 0
+			Ai = list(self.vn)[i]
+			Ai_prods = [prods for prods in self.productions if prods.lhs == Ai]
+			Ai_rhs = [prods.rhs for prods in Ai_prods]
+			while j <= i-1:
+				Aj = list(self.vn)[j]
+				for rhs in Ai_rhs:
+					if Aj in rhs:
+						if len(rhs) > 1:
+							reusable_rhs = [symbol for symbol in rhs if symbol != Aj]
+						Aj_prods = [prods for prods in  self.productions if prods.lhs == Aj]
+						Aj_rhs = [prods.rhs for prods in Aj_prods]
+						new_rhs = [r for r in Ai_rhs if rhs != r]
+						for skr in Aj_rhs:
+							new_rhs.append(skr+reusable_rhs)
+						newProds = []
+						Ai_prods = []
+						for r in new_rhs:
+							newProds.append(Production(Ai, r))
+						Ai_prods += newProds
+				j+=1
+			self.remove_direct_recursion(Ai_prods, Ai, epsilon)
 	'''
 		Remover recursão a esquerda diretas
 	'''
-	def remove_direct_recursion(self, prod, nt):
+	def remove_direct_recursion(self, prod, nt, epsilon):
 		prods_without_recursion = []
 		prods_with_recursion = []
 		for p in prod:
@@ -446,21 +481,33 @@ class ContextFreeGrammar:
 				prods_with_recursion.append(p)
 		
 		new_nt = self.new_nt(nt)
+		newProd = Production(new_nt, [])
+		newProd.rhs = [rhs for rhs in p.rhs] 
 		if prods_with_recursion:
 			for p in prods_with_recursion:
-				p.lhs = new_nt
 				x = 0
 				while True:
-					if p.rhs[x].has_epsilon_in_first() and p.rhs[x] != nt:
+					if newProd.rhs[x].has_epsilon_in_first() and newProd.rhs[x] != nt:
 						x+=1
-					elif p.rhs[x] == nt:
-						p.rhs[x] = Symbol("$at")
+					elif newProd.rhs[x] == nt:
+						newProd.rhs[x] = Symbol("$at")
 					else:
 						break
-				p.rhs = [rhs for rhs in p.rhs if rhs.label != "$at"]
-				p.rhs.append(new_nt)
-		for p in prods_without_recursion:
-			p.rhs.append(new_nt)
+				newProd.rhs = [rhs for rhs in newProd.rhs if rhs.label != "$at"]
+				newProd.rhs.append(new_nt)
+		newProd_eps = Production(new_nt, [epsilon])
+		starter = Production(nt, [])
+		if prods_without_recursion:
+			for p in prods_without_recursion:
+				starter.rhs += p.rhs
+				starter.rhs.append(new_nt)
+		else:
+			starter = Production(nt, [new_nt])
+		self.productions = [prod for prod in self.productions if nt != prod.lhs]
+		self.productions.append(starter)
+		self.productions.append(newProd)
+		self.productions.append(newProd_eps)
+		print(self.productions)
 	'''
 		Método auxiliar que pega a lista de Produções e transforma em uma string.
 	'''
@@ -552,7 +599,7 @@ class Production:
 			elif rhs in vt:
 				if "&" in [k.label for k in p_first]:
 					epsilon = next(symbol for symbol in vt if symbol.label == "&")
-					p_first.remove(symbol)
+					p_first.remove(epsilon)
 				p_first.add(rhs)
 				break
 		return p_first
@@ -569,6 +616,7 @@ class Symbol:
 		self.dependences = []
 		self.simple = set()
 		self.nt_reachables = set()
+		self.equals = set()
 	def __repr__(self):
 		return self.label
 
@@ -596,7 +644,8 @@ class Symbol:
 		Calcula o first de um NT, pegando as produções que ele deriva, e então executando
 		o algoritmo de calculo de first visto em aula.
 	'''
-	def calculate_first(self, productions, vn, vt):
+	def calculate_first(self, productions, vn, vt, visited=[]):
+		visited.append(self)
 		myprods = [prod for prod in productions if prod.lhs.label == self.label]
 		for prod in myprods:
 			if prod.rhs[0] in vt:
@@ -608,9 +657,12 @@ class Symbol:
 			for x in range(len(prod.rhs)):
 				if previousHadEpsilon:
 					if prod.rhs[x] not in vt and prod.rhs[x]:
-						if prod.rhs[x].label != self.label:
-							prod.rhs[x].calculate_first(productions, vn, vt)
-							self.first.update(prod.rhs[x].first-{epsilon})
+						if prod.rhs[x].label != self.label: 
+							if prod.rhs[x].label not in [l.label for l in visited]:
+								prod.rhs[x].calculate_first(productions, vn, vt, visited)
+								self.first.update(prod.rhs[x].first-{epsilon})
+							elif prod.rhs[x] in visited and prod:
+								self.equals.add(prod.rhs[x])
 						if prod.rhs[x].has_epsilon_in_first():
 							previousHadEpsilon = True
 						else:
@@ -618,6 +670,21 @@ class Symbol:
 					else:
 						self.first.update(prod.rhs[x].first)
 						break
+
+
+	'''
+		Método para auxiliar no cálculo dos firsts, quando se tem produções do tipo
+		S->A b
+		A->S a
+		quando isso ocorre os firsts são iguais
+	'''
+	def update_first_of_equals(self, epsilon):
+		if self.equals:
+			for s in self.equals:
+				if epsilon != None:
+					self.first.update(s.first-{epsilon})
+				else:
+					self.first.update(s.first)
 	'''
 		Método similar ao first, mas calcula o first_nt que são os não terminais que aparecem no começo
 		de uma produção(definição meio fraca, não consigo me expressar direito)
@@ -633,8 +700,9 @@ class Symbol:
 					if prods.rhs[x] in vn:
 						self.first_nt.add(prods.rhs[x])
 						if prods.rhs[x].label != self.label:
-							prods.rhs[x].calculate_first_nt(productions, vn)
-							self.first_nt.update(prods.rhs[x].first_nt)
+							if prods.rhs[x] not in self.first_nt:
+								prods.rhs[x].calculate_first_nt(productions, vn)
+								self.first_nt.update(prods.rhs[x].first_nt)
 						if prods.rhs[x].has_epsilon_in_first():
 							x+=1
 						else:
@@ -654,9 +722,10 @@ class Symbol:
 						rhs.calculate_nt_reachables(productions, vn)
 						self.nt_reachables.update(rhs.nt_reachables)
 
+
 grammar = "S1->S1 a|b B|c B|A d\nA->B B A w|h|&\nB->f|&"
-grammar2 = "S1->B a|b B|c B|A d\nA->B B A w|h|&\nB->S1 f|&"
-grammar3 = "S->b B|A a\nA->b S|B a|&\nB->a"
+grammar2 = "S1->B a|b B|c B|A d\nA->A w|h|&\nB->S1 f|&"
+grammar3 = "S->b B|A a\nA->b S|B a|&\nB->x"
 grammar4 = "S->a S|B C|B D\nA->c C|A B\nB->b B|&\nC->a A|B C\nD->d D d|c"
 grammar5 = "E->T E1\nE1->+ T E1|&\nT->F T1\nT1->* F T1|&\nF->( E )|i"
 grammar6 = "E->E + T|T\nT->T * F|F\nF->( E )|a"
@@ -666,8 +735,9 @@ grammar9 = "S->a A|B b\nA->a A|&\nB->b B|A|&"
 grammar10 = "S->&|a A\nA->a|&"
 grammar11 = "S->A b|a\nA->S b|a"
 grammar12 = "E->E + T|( E )|a|T * F\nT->T * F|( E )|a\nF->( E )|a"
-grammar13 = "S->a|b"
-cfg = ContextFreeGrammar(" ",grammar6)
+grammar13 = "S->A b\nA->S a"
+grammar14 = "S->A a|S b\nA->S c|d"
+cfg = ContextFreeGrammar(" ",grammar14)
 #cfg.set_firsts()
 #cfg.set_follows()
 # for i in cfg.vn:
@@ -685,4 +755,4 @@ for i in cfg.vn:
 for i in cfg.vn:
 	print(str(i)+" first_nt")
 	print(i.first_nt)
-print(cfg.is_factored())
+cfg.remove_leftmost_recursion()

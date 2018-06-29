@@ -62,7 +62,15 @@ class View(QWidget):
 		else:
 			text5 = "Não está fatorada"
 
+		rep_g.set_firsts()
+		rep_g.set_follows()
+		rep_g.set_first_nt()
+
+		text6 = str(rep_g.first)
+		text7 = str(rep_g.follow)
+		text8 = str(rep_g.first_nt)
+
 		lfm_recursion = rep_g.has_leftmost_recursion()
 
-		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4+"\n"+text5)
+		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4+"\n"+text5+"\n"+text6+"\n"+text7+"\n"+text8+"\n"+lfm_recursion)
 		self.grid.addWidget(states, 1, 1)
