@@ -38,8 +38,8 @@ class View(QWidget):
 		self.view.textCursor().insertText(grammar.p_string)
 		font = QtGui.QFont()
 		font.setBold(True)
-		states = QLabel(self)
-		states.setFont(font)
+		self.states = QTextEdit(self)
+		self.states.setFont(font)
 		rep_g = grammar
 		text1 = rep_g.finiteness()
 		if rep_g.is_epsilon_free():
@@ -82,6 +82,6 @@ class View(QWidget):
 			text9 = "Tem recursão a esquerda"
 		else:
 			text9 = "Não tem recursão a esquerda"
-
-		states.setText(text1+"\n"+text2+"\n"+text3+"\n"+text4+"\n"+text5+"\n"+text6+"\n"+text7+"\n"+text8+"\n"+text9)
-		self.grid.addWidget(states, 1, 1)
+		self.states.clear()
+		self.states.textCursor().insertText(text1+"\n"+text2+"\n"+text3+"\n"+text4+"\n"+text5+"\n"+text6+"\n"+text7+"\n"+text8+"\n"+text9)
+		self.grid.addWidget(self.states, 1, 1)

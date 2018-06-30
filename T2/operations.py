@@ -43,12 +43,11 @@ class ContextFreeOperations(QWidget):
 		self.setLayout(grid)
 		self.show()
 
-
-
 	def remove_recursion(self, name, grammars):
 		grammar = next(g for g in grammars if g.name == name)
 		intermed_g = ContextFreeGrammar("$at", grammar.p_string)
 		intermed_g.remove_leftmost_recursion()
+		print(intermed_g.productions)
 		original = QTextEdit(self)
 		without_recursion = QTextEdit(self)
 
@@ -58,6 +57,8 @@ class ContextFreeOperations(QWidget):
 
 		original.setReadOnly(True)
 		without_recursion.setReadOnly(True)
+
+		print(intermed_g.p_string)
 
 		original.textCursor().insertText(grammar.p_string)
 		without_recursion.textCursor().insertText(intermed_g.p_string)
@@ -119,9 +120,9 @@ class ContextFreeOperations(QWidget):
 		while not saved:
 			name, ok = QInputDialog().getText(self, "Input Dialog", "Nomeie a gramática")
 			if ok:
-				if not any(x.name == name for x in grammars) and name != "":
+				if not any(x.name == name for x in grammar_list) and name != "":
 					n_g = ContextFreeGrammar(name, grammar)
-					grammars.append(grammar)
+					grammar_list.append(n_g)
 					saved = True
 			else:
 				break
