@@ -75,6 +75,7 @@ class ContextFreeOperations(QWidget):
 		epsilon_free = QTextEdit(self)
 		without_simple_prods = QTextEdit(self)
 		without_useless_symbols = QTextEdit(self)
+		intermediary_stuff = QTextEdit(self)
 
 		save_epsilon_free = QPushButton("Salvar gramática &-livre", self)
 		save_without_simple_prods = QPushButton("Salvar gramática sem produções simples", self)
@@ -106,8 +107,14 @@ class ContextFreeOperations(QWidget):
 		else:
 			without_useless_symbols.textCursor().insertText(intermed_g.p_string)
 
-
+		if "Ne" in intermeds:
+			intermediary_stuff.textCursor().insertText("Ne"+"".join(str(intermeds["Ne"]))+"\n")
+		if "Nf" in intermeds:
+			intermediary_stuff.textCursor().insertText("Nf"+"".join(str(intermeds["Nf"]))+"\n")
+		if "Vf" in intermeds:
+			intermediary_stuff.textCursor().insertText("Vf"+"".join(str(intermeds["Vf"]))+"\n")
 		self.layout().addWidget(original, 1, 0)
+		self.layout().addWidget(intermediary_stuff, 1, 1)
 		self.layout().addWidget(epsilon_free, 2, 0)
 		self.layout().addWidget(without_simple_prods, 3, 0)
 		self.layout().addWidget(without_useless_symbols, 4, 0)		

@@ -9,7 +9,7 @@ AUTOR : GUSTAVO BORGES FRANÇA.
 
 '''
 	Mais classes para suporte a interface gráfica.
-	Aqui criam-se as visualizações das gramáticas, expressões e autômatos salvos.
+	Aqui criam-se as visualizações das gramáticas.
 '''
 
 class View(QWidget):

@@ -250,6 +250,7 @@ class ContextFreeGrammar:
 			self.vn = self.vn&vf
 			self.vt = self.vt&vf
 			self.redefine_productions()
+		return dict({"nf":nf, "vf":vf})
 
 	'''
 		Método que retorna Nf, o conjunto símbolos da gramática que são férteis. 
@@ -368,6 +369,7 @@ class ContextFreeGrammar:
 					break
 		self.productions = e_freeProds
 		self.stringify_productions()
+		return Ne
 	
 
 	'''
@@ -396,8 +398,7 @@ class ContextFreeGrammar:
 							elif new_prod not in self.productions:
 								self.productions.append(new_prod)
 		self.productions = [prod for prod in self.productions if prod not in simples]
-		self.stringify_productions()
-
+		self.stringify_productions() 
 
 	'''
 		Transforma uma gramática em própria
@@ -406,11 +407,12 @@ class ContextFreeGrammar:
 	def into_proper_grammar(self):
 		intermediary = dict()
 		if not self.is_epsilon_free():
-			self.into_epsilon_free()
+			Ne = self.into_epsilon_free()
 			self.decompose_and_formalize()
 			print("EPSILON FREE")
 			print(self.p_string)
 			intermediary["e-free"] = self.p_string
+			intermediary["Ne"] = Ne
 		if self.has_simple_productions():		
 			self.remove_simple_productions()
 			self.productions = []
@@ -418,12 +420,14 @@ class ContextFreeGrammar:
 			print("sem prods simples")
 			print(self.p_string)
 			intermediary["no-simple"] = self.p_string
-		self.remove_useless_symbols()
+		useless = self.remove_useless_symbols()
 		self.productions = []
 		self.decompose_and_formalize()
 		print("propra")
 		print(self.p_string)
 		intermediary["no-useless"]=self.p_string
+		intermediary["Nf"]=useless["nf"]
+		intermediary["Vf"]=useless["vf"]
 		return intermediary
 
 	'''
